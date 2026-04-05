@@ -7,4 +7,3 @@ dist/
 .env
 .env.*
 data/
-backend/.env
