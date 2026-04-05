@@ -255,7 +255,7 @@ import { healthRoutes } from './routes/health'
 const start = async () => {
   const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
   await fastify.register(healthRoutes)
-  await fastify.listen({ port: 3001, host: '0.0.0.0' })
+  await fastify.listen({ port: 7000, host: '0.0.0.0' })
 }
 
 start().catch((err: unknown) => {
@@ -288,7 +288,7 @@ export const healthRoutes: FastifyPluginAsync = async (fastify) => {
 }
 ```
 
-Runs on port `3001`.
+Runs on port `7000`.
 
 ---
 
@@ -297,7 +297,7 @@ Runs on port `3001`.
 | Service  | Port |
 |----------|------|
 | Frontend | 5173 |
-| Backend  | 3001 |
+| Backend  | 7000 |
 
 ---
 
