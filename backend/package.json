@@ -9,6 +9,7 @@
     "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
+    "@fastify/cors": "^9.0.0",
     "@fastify/type-provider-typebox": "^4.0.0",
     "@prisma/client": "^5.0.0",
     "fastify": "^4.0.0"
