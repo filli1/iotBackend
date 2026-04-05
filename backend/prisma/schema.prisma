@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model SensorUnit {
+  id          String   @id
+  name        String
+  location    String
+  productName String
+  ipAddress   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tofSensors    TofSensor[]
+  sessions      PresenceSession[]
+  alertRule     AlertRule?
+  configuration UnitConfiguration?
+}
+
+model TofSensor {
+  id      String @id @default(cuid())
+  unitId  String
+  index   Int
+  label   String
+  minDist Int
+  maxDist Int
+
+  unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([unitId, index])
+}
+
+model PresenceSession {
+  id              String    @id @default(cuid())
+  unitId          String
+  startedAt       DateTime
+  endedAt         DateTime?
+  dwellSeconds    Int       @default(0)
+  productPickedUp Boolean   @default(false)
+  status          String    @default("active")
+
+  unit   SensorUnit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  events SessionEvent[]
+}
+
+model SessionEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  type      String
+  ts        DateTime
+  payload   String?
+
+  session PresenceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model AlertRule {
+  id                    String  @id @default(cuid())
+  unitId                String  @unique
+  dwellThresholdSeconds Int     @default(30)
+  requirePickup         Boolean @default(false)
+  enabled               Boolean @default(true)
+
+  unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+}
+
+model UnitConfiguration {
+  id                      String  @id @default(cuid())
+  unitId                  String  @unique
+  minSensorAgreement      Int     @default(2)
+  departureTimeoutSeconds Int     @default(5)
+  dwellMinSeconds         Int     @default(3)
+  pirEnabled              Boolean @default(true)
+  pirCooldownSeconds      Int     @default(10)
+  imuPickupThresholdG     Float   @default(1.5)
+  imuExaminationEnabled   Boolean @default(true)
+  imuDurationThresholdMs  Int     @default(500)
+
+  unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+}
