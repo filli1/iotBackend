@@ -220,6 +220,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: { port: 5174 },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
@@ -532,7 +533,7 @@ Expected: zero errors in both workspaces.
 npm run dev
 ```
 
-Expected: two labelled log streams appear — `[frontend]` in cyan (Vite on port 5173) and `[backend]` in green (Fastify on port 7000). No errors.
+Expected: two labelled log streams appear — `[frontend]` in cyan (Vite on port 5174) and `[backend]` in green (Fastify on port 7000). No errors.
 
 - [ ] **Step 4: Verify backend health endpoint**
 
@@ -552,7 +553,7 @@ Expected output:
 
 - [ ] **Step 5: Verify frontend**
 
-Open `http://localhost:5173` in a browser.
+Open `http://localhost:5174` in a browser.
 
 Expected: dark page with centred white "Store Attention" heading. No console errors.
 

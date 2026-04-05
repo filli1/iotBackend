@@ -112,7 +112,7 @@ CORS is configured on the Fastify instance in `backend/src/index.ts` (added in t
 
 ```typescript
 import cors from '@fastify/cors'
-await fastify.register(cors, { origin: 'http://localhost:5173' })
+await fastify.register(cors, { origin: 'http://localhost:5174' })
 ```
 
 ---

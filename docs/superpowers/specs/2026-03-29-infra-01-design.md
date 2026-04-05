@@ -156,6 +156,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  server: { port: 5174 },
 })
 ```
 
@@ -196,7 +197,7 @@ export function App() {
 }
 ```
 
-Runs on port `5173` (Vite default).
+Runs on port `5174` (Vite default).
 
 ---
 
@@ -296,7 +297,7 @@ Runs on port `7000`.
 
 | Service  | Port |
 |----------|------|
-| Frontend | 5173 |
+| Frontend | 5174 |
 | Backend  | 7000 |
 
 ---
@@ -306,7 +307,7 @@ Runs on port `7000`.
 - [ ] `npm install` from the repo root installs all workspace dependencies without errors.
 - [ ] `npm run dev` from the repo root starts both servers with colour-coded output.
 - [ ] `curl http://localhost:3001/health` returns `{"status":"ok","timestamp":"<ISO>"}` with HTTP 200.
-- [ ] `http://localhost:5173` renders "Store Attention" in a browser with no console errors.
+- [ ] `http://localhost:5174` renders "Store Attention" in a browser with no console errors.
 - [ ] `npm run typecheck` passes with zero errors in both workspaces.
 
 ---
