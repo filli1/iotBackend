@@ -1,0 +1,13 @@
+{
+  "name": "store-attention",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "dev": "concurrently -n frontend,backend -c cyan,green \"npm run dev -w frontend\" \"npm run dev -w backend\"",
+    "typecheck": "npm run typecheck -w frontend && npm run typecheck -w backend",
+    "test": "npm run test -w frontend && npm run test -w backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
