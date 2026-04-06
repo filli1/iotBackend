@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { sensorRoutes } from './sensors'
@@ -18,6 +18,10 @@ describe('POST /api/sensors/data', () => {
   beforeEach(() => {
     registry = new UnitRegistry()
     registry.register('unit-01')
+  })
+
+  afterEach(() => {
+    registry.stop()
   })
 
   it('accepts a valid sensor reading and returns { ok: true }', async () => {

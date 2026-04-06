@@ -21,14 +21,18 @@ const start = async () => {
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
     registry,
-    onReading: (unitId, reading) => {
+    onReading: (unitId, _reading) => {
       // DetectionEngine will be wired here in CORE-01
       fastify.log.info({ unitId }, 'sensor reading received')
     },
-    onEvent: (unitId, event) => {
+    onEvent: (unitId, _event) => {
       // DetectionEngine will be wired here in CORE-01
-      fastify.log.info({ unitId, event: event.event }, 'hardware event received')
+      fastify.log.info({ unitId }, 'hardware event received')
     },
+  })
+
+  fastify.addHook('onClose', async () => {
+    registry.stop()
   })
 
   await fastify.listen({ port: 7000, host: '0.0.0.0' })

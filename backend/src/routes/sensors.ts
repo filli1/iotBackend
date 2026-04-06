@@ -1,4 +1,4 @@
-import { Type } from '@sinclair/typebox'
+import { Type } from '@fastify/type-provider-typebox'
 import type { FastifyPluginAsync } from 'fastify'
 import type { UnitRegistry } from '../lib/unitRegistry'
 import type { SensorReading, HardwareEvent } from '../types/sensor'
