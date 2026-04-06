@@ -17,6 +17,15 @@ export type UnitLiveState = {
   lastEvent: { event: string; ts: string } | null
 }
 
+export type EventFeedEntry = {
+  id: string
+  unitId: string
+  event: string
+  ts: string
+  dwellSeconds?: number
+  productPickedUp?: boolean
+}
+
 export type ActiveAlert = {
   id: string
   unitId: string
@@ -29,6 +38,7 @@ export type WsStore = {
   connected: boolean
   units: Record<string, UnitLiveState>
   activeAlerts: ActiveAlert[]
+  eventFeed: EventFeedEntry[]
   setConnected: (v: boolean) => void
   handleMessage: (msg: Record<string, unknown>) => void
   dismissAlert: (sessionId: string) => void
@@ -39,6 +49,7 @@ export const useWsStore = create<WsStore>((set) => ({
   connected: false,
   units: {},
   activeAlerts: [],
+  eventFeed: [],
 
   setConnected: (connected) => set({ connected }),
 
@@ -64,6 +75,14 @@ export const useWsStore = create<WsStore>((set) => ({
         },
       }))
     } else if (type === 'session_event') {
+      const entry: EventFeedEntry = {
+        id: `${msg.sessionId as string}-${msg.event as string}-${msg.ts as string}`,
+        unitId,
+        event: msg.event as string,
+        ts: msg.ts as string,
+        dwellSeconds: msg.dwellSeconds as number | undefined,
+        productPickedUp: msg.productPickedUp as boolean | undefined,
+      }
       set(state => ({
         units: {
           ...state.units,
@@ -73,6 +92,7 @@ export const useWsStore = create<WsStore>((set) => ({
             lastEvent: { event: msg.event as string, ts: msg.ts as string },
           },
         },
+        eventFeed: [entry, ...state.eventFeed].slice(0, 200),
       }))
     } else if (type === 'unit_status') {
       set(state => ({
