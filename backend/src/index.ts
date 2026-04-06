@@ -5,18 +5,28 @@ import { healthRoutes } from './routes/health'
 import { sensorRoutes } from './routes/sensors'
 import { UnitRegistry } from './lib/unitRegistry'
 import { DetectionEngine } from './services/detectionEngine'
+import { SessionManager } from './services/sessionManager'
+import { registerWs } from './ws/broadcaster'
 import { prisma } from './lib/prisma'
 
 const registry = new UnitRegistry()
 
 const start = async () => {
-  const units = await prisma.sensorUnit.findMany({
-    include: { configuration: true, tofSensors: true },
+  const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
+
+  await fastify.register(cors, { origin: 'http://localhost:5174' })
+
+  const broadcaster = await registerWs(fastify)
+
+  const sessionManager = new SessionManager(prisma, broadcaster)
+  const engine = new DetectionEngine(event => {
+    sessionManager.handleDetectionEvent(event).catch(err => {
+      fastify.log.error(err, 'session manager error')
+    })
   })
 
-  // SessionManager callback will be added in CORE-02; use a placeholder for now
-  const engine = new DetectionEngine(event => {
-    console.log('detection event:', event)
+  const units = await prisma.sensorUnit.findMany({
+    include: { configuration: true, tofSensors: true },
   })
 
   for (const unit of units) {
@@ -26,13 +36,24 @@ const start = async () => {
     }
   }
 
-  const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
+  registry.onOffline(unitId => {
+    broadcaster.broadcast({ type: 'unit_status', unitId, status: 'offline', lastSeen: new Date().toISOString() })
+  })
 
-  await fastify.register(cors, { origin: 'http://localhost:5174' })
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
     registry,
-    onReading: (unitId, reading) => engine.process(unitId, reading),
+    onReading: (unitId, reading) => {
+      broadcaster.broadcast({
+        type: 'sensor_reading',
+        unitId,
+        ts: new Date().toISOString(),
+        tof: reading.tof,
+        pir: reading.pir,
+        imu: reading.imu,
+      })
+      engine.process(unitId, reading)
+    },
     onEvent: (unitId, event) => engine.processEvent(unitId, event),
   })
 
