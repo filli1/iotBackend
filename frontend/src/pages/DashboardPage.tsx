@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { SensorUnitCard } from '../components/SensorUnitCard'
 import { ConnectionBanner } from '../components/ConnectionBanner'
+import { AlertBanner } from '../components/AlertBanner'
 import { apiFetch } from '../lib/api'
 import type { Unit } from '../hooks/useUnits'
 import { EventFeed } from '../components/EventFeed'
@@ -16,6 +17,7 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
+      <AlertBanner />
       <ConnectionBanner />
       <div className="p-6 h-screen flex flex-col">
         <h1 className="text-2xl font-bold mb-4">Live Dashboard</h1>
