@@ -1,5 +1,6 @@
 import { Type } from '@fastify/type-provider-typebox'
 import type { FastifyPluginAsync } from 'fastify'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import type { UnitRegistry } from '../lib/unitRegistry'
 
@@ -20,13 +21,7 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     '/api/units',
     { schema: { body: CreateUnitBody } },
     async (request, reply) => {
-      const { id, name, location, productName, ipAddress } = request.body as {
-        id: string
-        name: string
-        location: string
-        productName: string
-        ipAddress: string
-      }
+      const { id, name, location, productName, ipAddress } = request.body
 
       const existing = await prisma.sensorUnit.findUnique({ where: { id } })
       if (existing) return reply.status(409).send({ error: 'Unit ID already exists' })
@@ -59,17 +54,23 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
   fastify.get('/api/units', async () => {
     const units = await prisma.sensorUnit.findMany({ orderBy: { createdAt: 'asc' } })
     return {
-      units: units.map(u => ({
-        ...u,
-        online: opts.registry.getStatus(u.id)?.online ?? false,
-        lastSeen: opts.registry.getStatus(u.id)?.lastSeen ?? null,
-      })),
+      units: units.map(u => {
+        const status = opts.registry.getStatus(u.id)
+        return { ...u, online: status?.online ?? false, lastSeen: status?.lastSeen ?? null }
+      }),
     }
   })
 
   fastify.delete('/api/units/:unitId', async (request, reply) => {
     const { unitId } = request.params as { unitId: string }
-    await prisma.sensorUnit.delete({ where: { id: unitId } })
+    try {
+      await prisma.sensorUnit.delete({ where: { id: unitId } })
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        return reply.status(404).send({ error: 'Unit not found' })
+      }
+      throw e
+    }
     return reply.send({ ok: true })
   })
 }
