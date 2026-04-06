@@ -4,6 +4,8 @@ import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { healthRoutes } from './routes/health'
 import { sensorRoutes } from './routes/sensors'
 import { unitRoutes } from './routes/units'
+import { sessionRoutes } from './routes/sessions'
+import { analyticsRoutes } from './routes/analytics'
 import { UnitRegistry } from './lib/unitRegistry'
 import { DetectionEngine } from './services/detectionEngine'
 import { SessionManager } from './services/sessionManager'
@@ -44,6 +46,8 @@ const start = async () => {
     broadcaster.broadcast({ type: 'unit_status', unitId, status: 'offline', lastSeen: new Date().toISOString() })
   })
 
+  await fastify.register(sessionRoutes)
+  await fastify.register(analyticsRoutes)
   await fastify.register(unitRoutes, { registry, engine })
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
