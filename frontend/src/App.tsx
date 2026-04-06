@@ -1,7 +1,13 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { SetupUnitsPage } from './pages/SetupUnitsPage'
+
 export function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-950 text-white">
-      <h1 className="text-3xl font-bold">Store Attention</h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/setup/units" replace />} />
+        <Route path="/setup/units" element={<SetupUnitsPage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
