@@ -1,4 +1,4 @@
-import { Type } from '@fastify/type-provider-typebox'
+import { Type, type Static } from '@fastify/type-provider-typebox'
 import type { FastifyPluginAsync } from 'fastify'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../lib/prisma'
@@ -22,7 +22,7 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     '/api/units',
     { schema: { body: CreateUnitBody } },
     async (request, reply) => {
-      const { id, name, location, productName, ipAddress } = request.body
+      const { id, name, location, productName, ipAddress } = request.body as Static<typeof CreateUnitBody>
 
       const existing = await prisma.sensorUnit.findUnique({ where: { id } })
       if (existing) return reply.status(409).send({ error: 'Unit ID already exists' })
@@ -122,7 +122,7 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     { schema: { body: PatchConfigBody } },
     async (request, reply) => {
       const { unitId } = request.params as { unitId: string }
-      const body = request.body
+      const body = request.body as Static<typeof PatchConfigBody>
 
       await prisma.$transaction(async tx => {
         if (body.configuration) {
