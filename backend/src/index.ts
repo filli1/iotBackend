@@ -4,15 +4,26 @@ import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { healthRoutes } from './routes/health'
 import { sensorRoutes } from './routes/sensors'
 import { UnitRegistry } from './lib/unitRegistry'
+import { DetectionEngine } from './services/detectionEngine'
 import { prisma } from './lib/prisma'
 
 const registry = new UnitRegistry()
 
 const start = async () => {
-  // Load all registered units into the registry on startup
-  const units = await prisma.sensorUnit.findMany({ select: { id: true } })
+  const units = await prisma.sensorUnit.findMany({
+    include: { configuration: true, tofSensors: true },
+  })
+
+  // SessionManager callback will be added in CORE-02; use a placeholder for now
+  const engine = new DetectionEngine(event => {
+    console.log('detection event:', event)
+  })
+
   for (const unit of units) {
     registry.register(unit.id)
+    if (unit.configuration) {
+      engine.addUnit(unit.id, unit.configuration, unit.tofSensors)
+    }
   }
 
   const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
@@ -21,14 +32,8 @@ const start = async () => {
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
     registry,
-    onReading: (unitId, _reading) => {
-      // DetectionEngine will be wired here in CORE-01
-      fastify.log.info({ unitId }, 'sensor reading received')
-    },
-    onEvent: (unitId, _event) => {
-      // DetectionEngine will be wired here in CORE-01
-      fastify.log.info({ unitId }, 'hardware event received')
-    },
+    onReading: (unitId, reading) => engine.process(unitId, reading),
+    onEvent: (unitId, event) => engine.processEvent(unitId, event),
   })
 
   fastify.addHook('onClose', async () => {
