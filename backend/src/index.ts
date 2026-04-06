@@ -41,7 +41,7 @@ const start = async () => {
     broadcaster.broadcast({ type: 'unit_status', unitId, status: 'offline', lastSeen: new Date().toISOString() })
   })
 
-  await fastify.register(unitRoutes, { registry })
+  await fastify.register(unitRoutes, { registry, engine })
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
     registry,
