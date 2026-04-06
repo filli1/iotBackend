@@ -8,6 +8,7 @@ type ActiveSession = {
   startedAt: Date
   productPickedUp: boolean
   alertFired: boolean
+  dwellCheckTimer: ReturnType<typeof setInterval>
 }
 
 export class SessionManager {
@@ -42,13 +43,21 @@ export class SessionManager {
       data: { unitId, startedAt: ts, status: 'active' },
     })
 
-    this.activeSessions.set(unitId, {
+    const activeSession: ActiveSession = {
       sessionId: session.id,
       unitId,
       startedAt: ts,
       productPickedUp: false,
       alertFired: false,
-    })
+      dwellCheckTimer: setInterval(async () => {
+        const active = this.activeSessions.get(unitId)
+        if (!active || active.alertFired) return
+        const dwellSeconds = Math.round((Date.now() - active.startedAt.getTime()) / 1000)
+        await this.checkAlertRule(unitId, active, dwellSeconds)
+      }, 5_000),
+    }
+
+    this.activeSessions.set(unitId, activeSession)
 
     this.broadcaster.broadcast({
       type: 'session_event',
@@ -62,6 +71,8 @@ export class SessionManager {
   private async onSessionEnded(unitId: string, ts: Date, dwellSeconds: number): Promise<void> {
     const active = this.activeSessions.get(unitId)
     if (!active) return
+
+    clearInterval(active.dwellCheckTimer)
 
     await this.prisma.presenceSession.update({
       where: { id: active.sessionId },
