@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { healthRoutes } from './routes/health'
 import { sensorRoutes } from './routes/sensors'
+import { unitRoutes } from './routes/units'
 import { UnitRegistry } from './lib/unitRegistry'
 import { DetectionEngine } from './services/detectionEngine'
 import { SessionManager } from './services/sessionManager'
@@ -40,6 +41,7 @@ const start = async () => {
     broadcaster.broadcast({ type: 'unit_status', unitId, status: 'offline', lastSeen: new Date().toISOString() })
   })
 
+  await fastify.register(unitRoutes, { registry })
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
     registry,
