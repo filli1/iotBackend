@@ -37,6 +37,7 @@ const start = async () => {
   })
 
   fastify.addHook('onClose', async () => {
+    engine.destroy()
     registry.stop()
   })
 

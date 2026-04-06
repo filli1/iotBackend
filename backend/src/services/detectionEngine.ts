@@ -101,4 +101,12 @@ export class DetectionEngine {
       this.onEvent({ type: 'product_picked_up', unitId, ts: new Date() })
     }
   }
+
+  destroy(): void {
+    for (const unit of this.units.values()) {
+      if (unit.dwellTimer) clearTimeout(unit.dwellTimer)
+      if (unit.departureTimer) clearTimeout(unit.departureTimer)
+    }
+    this.units.clear()
+  }
 }
