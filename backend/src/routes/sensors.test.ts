@@ -3,12 +3,15 @@ import Fastify from 'fastify'
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { sensorRoutes } from './sensors'
 import { UnitRegistry } from '../lib/unitRegistry'
+import type { HealthMonitor } from '../services/healthMonitor'
+
+const mockHealthMonitor = { process: () => {} } as unknown as HealthMonitor
 
 function buildApp(registry: UnitRegistry) {
   const app = Fastify().withTypeProvider<TypeBoxTypeProvider>()
   const onReading = () => {}
   const onEvent = () => {}
-  app.register(sensorRoutes, { registry, onReading, onEvent })
+  app.register(sensorRoutes, { registry, onReading, onEvent, healthMonitor: mockHealthMonitor })
   return app
 }
 

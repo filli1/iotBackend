@@ -8,6 +8,7 @@ import { UnitRegistry } from './lib/unitRegistry'
 import { DetectionEngine } from './services/detectionEngine'
 import { SessionManager } from './services/sessionManager'
 import { registerWs } from './ws/broadcaster'
+import { HealthMonitor } from './services/healthMonitor'
 import { prisma } from './lib/prisma'
 
 const registry = new UnitRegistry()
@@ -18,6 +19,7 @@ const start = async () => {
   await fastify.register(cors, { origin: 'http://localhost:5174' })
 
   const broadcaster = await registerWs(fastify)
+  const healthMonitor = new HealthMonitor(broadcaster)
 
   const sessionManager = new SessionManager(prisma, broadcaster)
   const engine = new DetectionEngine(event => {
@@ -32,6 +34,7 @@ const start = async () => {
 
   for (const unit of units) {
     registry.register(unit.id)
+    healthMonitor.addUnit(unit.id)
     if (unit.configuration) {
       engine.addUnit(unit.id, unit.configuration, unit.tofSensors)
     }
@@ -45,6 +48,7 @@ const start = async () => {
   await fastify.register(healthRoutes)
   await fastify.register(sensorRoutes, {
     registry,
+    healthMonitor,
     onReading: (unitId, reading) => {
       broadcaster.broadcast({
         type: 'sensor_reading',

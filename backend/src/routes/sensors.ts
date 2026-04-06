@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import type { UnitRegistry } from '../lib/unitRegistry'
 import type { SensorReading, HardwareEvent } from '../types/sensor'
 import { isSensorReading } from '../types/sensor'
+import type { HealthMonitor } from '../services/healthMonitor'
 
 const ImuVector = Type.Object({ x: Type.Number(), y: Type.Number(), z: Type.Number() })
 
@@ -36,6 +37,7 @@ type PluginOptions = {
   registry: UnitRegistry
   onReading: (unitId: string, reading: SensorReading) => void
   onEvent: (unitId: string, event: HardwareEvent) => void
+  healthMonitor: HealthMonitor
 }
 
 export const sensorRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opts) => {
@@ -53,6 +55,7 @@ export const sensorRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, o
 
       if (isSensorReading(payload)) {
         opts.onReading(payload.unit_id, payload)
+        opts.healthMonitor.process(payload.unit_id, payload)
       } else {
         opts.onEvent(payload.unit_id, payload)
       }
