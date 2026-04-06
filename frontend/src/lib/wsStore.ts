@@ -34,15 +34,19 @@ export type ActiveAlert = {
   snoozedUntil?: number
 }
 
+export type HealthWarning = { condition: string; sensorIndex?: number; message: string; ts: string }
+
 export type WsStore = {
   connected: boolean
   units: Record<string, UnitLiveState>
   activeAlerts: ActiveAlert[]
   eventFeed: EventFeedEntry[]
+  healthWarnings: Record<string, HealthWarning[]>
   setConnected: (v: boolean) => void
   handleMessage: (msg: Record<string, unknown>) => void
   dismissAlert: (sessionId: string) => void
   snoozeAlert: (sessionId: string, ms: number) => void
+  dismissHealthWarning: (unitId: string, condition: string, sensorIndex?: number) => void
 }
 
 export const useWsStore = create<WsStore>((set) => ({
@@ -50,6 +54,7 @@ export const useWsStore = create<WsStore>((set) => ({
   units: {},
   activeAlerts: [],
   eventFeed: [],
+  healthWarnings: {},
 
   setConnected: (connected) => set({ connected }),
 
@@ -113,6 +118,35 @@ export const useWsStore = create<WsStore>((set) => ({
           { id: msg.sessionId as string, unitId, reason: msg.reason as string, ts: msg.ts as string },
         ],
       }))
+    } else if (type === 'health_alert') {
+      const warning: HealthWarning = {
+        condition: msg.condition as string,
+        sensorIndex: msg.sensorIndex as number | undefined,
+        message: msg.message as string,
+        ts: msg.ts as string,
+      }
+      set(state => ({
+        healthWarnings: {
+          ...state.healthWarnings,
+          [unitId]: [
+            ...(state.healthWarnings[unitId] ?? []).filter(
+              w => !(w.condition === warning.condition && w.sensorIndex === warning.sensorIndex)
+            ),
+            warning,
+          ],
+        },
+      }))
+    } else if (type === 'health_alert_cleared') {
+      const condition = msg.condition as string
+      const sensorIndex = msg.sensorIndex as number | undefined
+      set(state => ({
+        healthWarnings: {
+          ...state.healthWarnings,
+          [unitId]: (state.healthWarnings[unitId] ?? []).filter(
+            w => !(w.condition === condition && w.sensorIndex === sensorIndex)
+          ),
+        },
+      }))
     }
   },
 
@@ -124,5 +158,15 @@ export const useWsStore = create<WsStore>((set) => ({
       activeAlerts: state.activeAlerts.map(a =>
         a.id === sessionId ? { ...a, snoozedUntil: Date.now() + ms } : a
       ),
+    })),
+
+  dismissHealthWarning: (unitId, condition, sensorIndex) =>
+    set(state => ({
+      healthWarnings: {
+        ...state.healthWarnings,
+        [unitId]: (state.healthWarnings[unitId] ?? []).filter(
+          w => !(w.condition === condition && w.sensorIndex === sensorIndex)
+        ),
+      },
     })),
 }))

@@ -2,6 +2,7 @@ import { useWsStore } from '../lib/wsStore'
 import { TofGrid } from './TofGrid'
 import { PirBadge } from './PirBadge'
 import { ImuBadge } from './ImuBadge'
+import { HealthWarningBar } from './HealthWarningBar'
 
 const PRESENCE_LABELS: Record<string, string> = {
   idle: 'Idle', pending: 'Detecting…', active: 'Person Present', departing: 'Leaving…',
@@ -38,6 +39,8 @@ export function SensorUnitCard({ unitId, unitName }: Props) {
           {online ? 'Online' : 'Offline'}
         </span>
       </div>
+
+      <HealthWarningBar unitId={unitId} />
 
       <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${PRESENCE_COLOURS[presenceState]}`}>
         {PRESENCE_LABELS[presenceState]}
