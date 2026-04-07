@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type { WsBroadcaster } from '../ws/broadcaster'
 import type { DetectionEvent } from '../types/sensor'
+import { sendWhatsApp } from './twilioNotifier'
 
 type ActiveSession = {
   sessionId: string
@@ -159,6 +160,26 @@ export class SessionManager {
         reason,
         ts: new Date().toISOString(),
       })
+
+      // Fire-and-forget WhatsApp notifications
+      const [unit, subscriptions] = await Promise.all([
+        this.prisma.sensorUnit.findUnique({ where: { id: unitId } }),
+        this.prisma.unitSubscription.findMany({
+          where: { unitId },
+          include: { user: { select: { phoneNumber: true } } },
+        }),
+      ])
+
+      const phones = subscriptions
+        .map((s: { user: { phoneNumber: string | null } }) => s.user.phoneNumber)
+        .filter((p: string | null): p is string => p !== null)
+
+      if (unit && phones.length > 0) {
+        const body = `Alert: Customer at ${unit.name} — ${dwellSeconds}s dwell${session.productPickedUp ? ', product picked up' : ''}`
+        Promise.all(phones.map((phone: string) => sendWhatsApp(phone, body))).catch(err => {
+          console.error('WhatsApp notification failed:', err)
+        })
+      }
     }
   }
 }

@@ -1,6 +1,11 @@
+vi.mock('./twilioNotifier', () => ({
+  sendWhatsApp: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SessionManager } from './sessionManager'
 import type { WsBroadcaster } from '../ws/broadcaster'
+import { sendWhatsApp } from './twilioNotifier'
 
 // Minimal Prisma mock
 const mockPrisma = {
@@ -17,6 +22,12 @@ const mockPrisma = {
       dwellThresholdSeconds: 30,
       requirePickup: false,
     }),
+  },
+  sensorUnit: {
+    findUnique: vi.fn().mockResolvedValue({ name: 'Stand A' }),
+  },
+  unitSubscription: {
+    findMany: vi.fn().mockResolvedValue([]),
   },
 }
 
@@ -93,5 +104,29 @@ describe('SessionManager', () => {
     const alertCalls = (mockBroadcaster.broadcast as ReturnType<typeof vi.fn>).mock.calls
       .filter(([msg]) => msg.type === 'alert_fired')
     expect(alertCalls).toHaveLength(0)
+  })
+
+  it('sends WhatsApp to subscribed users when alert fires', async () => {
+    mockPrisma.unitSubscription.findMany.mockResolvedValueOnce([
+      { user: { phoneNumber: '+4553575520' } },
+    ])
+    await manager.handleDetectionEvent({ type: 'session_started', unitId: 'unit-01', ts: new Date() })
+    await manager.handleDetectionEvent({ type: 'session_ended', unitId: 'unit-01', ts: new Date(), dwellSeconds: 45 })
+
+    await new Promise(r => setTimeout(r, 10)) // allow fire-and-forget to settle
+
+    expect(sendWhatsApp).toHaveBeenCalledWith(
+      '+4553575520',
+      expect.stringContaining('Stand A')
+    )
+  })
+
+  it('does NOT call sendWhatsApp when there are no subscribers', async () => {
+    await manager.handleDetectionEvent({ type: 'session_started', unitId: 'unit-01', ts: new Date() })
+    await manager.handleDetectionEvent({ type: 'session_ended', unitId: 'unit-01', ts: new Date(), dwellSeconds: 45 })
+
+    await new Promise(r => setTimeout(r, 10))
+
+    expect(sendWhatsApp).not.toHaveBeenCalled()
   })
 })
