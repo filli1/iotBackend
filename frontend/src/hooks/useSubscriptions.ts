@@ -8,7 +8,7 @@ export function useSubscriptions() {
   useEffect(() => {
     apiFetch<{ unitIds: string[] }>('/api/me/subscriptions')
       .then(d => setSubscribedUnitIds(new Set(d.unitIds)))
-      .catch(() => {})
+      .catch((err: unknown) => { console.error('Failed to load subscriptions:', err) })
       .finally(() => setLoading(false))
   }, [])
 
