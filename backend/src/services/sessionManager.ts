@@ -171,13 +171,15 @@ export class SessionManager {
       ])
 
       const phones = subscriptions
-        .map((s: { user: { phoneNumber: string | null } }) => s.user.phoneNumber)
-        .filter((p: string | null): p is string => p !== null)
+        .map(s => s.user.phoneNumber)
+        .filter((p): p is string => p !== null)
 
       if (unit && phones.length > 0) {
         const body = `Alert: Customer at ${unit.name} — ${dwellSeconds}s dwell${session.productPickedUp ? ', product picked up' : ''}`
-        Promise.all(phones.map((phone: string) => sendWhatsApp(phone, body))).catch(err => {
-          console.error('WhatsApp notification failed:', err)
+        phones.forEach(phone => {
+          sendWhatsApp(phone, body).catch(err => {
+            console.error('WhatsApp notification failed:', err)
+          })
         })
       }
     }
