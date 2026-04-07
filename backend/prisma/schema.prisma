@@ -4,7 +4,16 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  phoneNumber  String?
+  createdAt    DateTime @default(now())
+
+  subscriptions UnitSubscription[]
 }
 
 model SensorUnit {
@@ -12,7 +21,7 @@ model SensorUnit {
   name        String
   location    String
   productName String
-  ipAddress   String
+  apiKey      String   @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -20,6 +29,7 @@ model SensorUnit {
   sessions      PresenceSession[]
   alertRule     AlertRule?
   configuration UnitConfiguration?
+  subscriptions UnitSubscription[]
 }
 
 model TofSensor {
@@ -81,4 +91,16 @@ model UnitConfiguration {
   imuDurationThresholdMs  Int     @default(500)
 
   unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+}
+
+model UnitSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  unitId    String
+  createdAt DateTime @default(now())
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, unitId])
 }
