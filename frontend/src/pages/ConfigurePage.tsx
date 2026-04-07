@@ -2,13 +2,79 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useUnitConfig } from '../hooks/useUnitConfig'
 import type { FullConfig } from '../hooks/useUnitConfig'
+import { apiFetch } from '../lib/api'
+
+type Subscriber = {
+  userId: string
+  email: string
+  phoneNumber: string | null
+  createdAt: string
+}
+
+type UserOption = {
+  id: string
+  email: string
+  phoneNumber: string | null
+}
 
 export function ConfigurePage() {
   const { unitId } = useParams<{ unitId: string }>()
   const { config, loading, saving, saved, error, save } = useUnitConfig(unitId!)
   const [draft, setDraft] = useState<FullConfig | null>(null)
+  const [apiKey, setApiKey] = useState<string | null>(null)
+  const [keyCopied, setKeyCopied] = useState(false)
+
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([])
+  const [allUsers, setAllUsers] = useState<UserOption[]>([])
+  const [addUserId, setAddUserId] = useState('')
+
+  const loadSubscribers = () =>
+    apiFetch<{ subscribers: Subscriber[] }>(`/api/units/${unitId}/subscriptions`)
+      .then(d => setSubscribers(d.subscribers))
+      .catch((err: unknown) => { console.error('Failed to load subscribers:', err) })
+
+  useEffect(() => {
+    loadSubscribers()
+    apiFetch<{ users: UserOption[] }>('/api/users')
+      .then(d => setAllUsers(d.users))
+      .catch((err: unknown) => { console.error('Failed to load users:', err) })
+  }, [unitId])
+
+  const handleAddSubscriber = async () => {
+    if (!addUserId) return
+    try {
+      await apiFetch(`/api/units/${unitId}/subscriptions/${addUserId}`, { method: 'POST' })
+      setAddUserId('')
+      await loadSubscribers()
+    } catch (err: unknown) {
+      console.error('Failed to add subscriber:', err)
+    }
+  }
+
+  const handleRemoveSubscriber = async (userId: string) => {
+    try {
+      await apiFetch(`/api/units/${unitId}/subscriptions/${userId}`, { method: 'DELETE' })
+      await loadSubscribers()
+    } catch (err: unknown) {
+      console.error('Failed to remove subscriber:', err)
+    }
+  }
 
   useEffect(() => { if (config) setDraft(config) }, [config])
+
+  useEffect(() => {
+    apiFetch<{ apiKey: string }>(`/api/units/${unitId}/api-key`)
+      .then(d => setApiKey(d.apiKey))
+      .catch(() => {})
+  }, [unitId])
+
+  const copyKey = () => {
+    if (!apiKey) return
+    navigator.clipboard.writeText(apiKey).then(() => {
+      setKeyCopied(true)
+      setTimeout(() => setKeyCopied(false), 2000)
+    })
+  }
 
   if (loading || !draft) return <div className="min-h-screen bg-gray-950 text-white p-6">Loading…</div>
   if (error) return <div className="min-h-screen bg-gray-950 text-red-400 p-6">{error}</div>
@@ -122,6 +188,91 @@ export function ConfigurePage() {
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Alert enabled</span>{toggle(draft.alertRule.enabled, v => setAlert('enabled', v))}</div>
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Dwell threshold (s)</span>{numInput(draft.alertRule.dwellThresholdSeconds, v => setAlert('dwellThresholdSeconds', v), 1, 300)}</div>
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Require pickup</span>{toggle(draft.alertRule.requirePickup, v => setAlert('requirePickup', v))}</div>
+          </div>
+        </section>
+
+        {/* Notifications */}
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Notifications</h2>
+          <p className="text-gray-400 text-sm mb-3">
+            Users subscribed here receive a WhatsApp alert when this unit's alert rule fires.
+            A valid phone number must be set on the user account.
+          </p>
+
+          {subscribers.length === 0 ? (
+            <p className="text-gray-500 text-sm">No subscribers yet.</p>
+          ) : (
+            <table className="w-full text-sm mb-4">
+              <thead>
+                <tr className="text-gray-400 text-left">
+                  <th className="pb-2">Email</th>
+                  <th className="pb-2">Phone</th>
+                  <th className="pb-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {subscribers.map(s => (
+                  <tr key={s.userId} className="border-t border-gray-800">
+                    <td className="py-2 pr-4">{s.email}</td>
+                    <td className="py-2 pr-4 text-gray-400">{s.phoneNumber ?? '—'}</td>
+                    <td className="py-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSubscriber(s.userId)}
+                        className="text-red-400 hover:text-red-300 text-xs"
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <div className="flex items-center gap-3">
+            <select
+              value={addUserId}
+              onChange={e => setAddUserId(e.target.value)}
+              className="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-sm"
+            >
+              <option value="">Add a user…</option>
+              {allUsers
+                .filter(u => !subscribers.some(s => s.userId === u.id))
+                .map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.email}{u.phoneNumber ? ` (${u.phoneNumber})` : ' (no phone)'}
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              onClick={handleAddSubscriber}
+              disabled={!addUserId}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50"
+            >
+              Add
+            </button>
+          </div>
+        </section>
+
+        {/* API Key */}
+        <section>
+          <h2 className="text-lg font-semibold mb-3">API Key</h2>
+          <p className="text-gray-400 text-sm mb-3">
+            Flash this key into your Arduino sketch as <code className="bg-gray-700 px-1 rounded">API_KEY</code>.
+            It must be sent as the <code className="bg-gray-700 px-1 rounded">X-Api-Key</code> header on every POST.
+          </p>
+          <div className="flex items-center gap-3">
+            <code className="flex-1 bg-gray-900 text-green-400 text-sm px-3 py-2 rounded font-mono break-all">
+              {apiKey ?? '…'}
+            </code>
+            <button
+              onClick={copyKey}
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm flex-shrink-0"
+            >
+              {keyCopied ? 'Copied ✓' : 'Copy'}
+            </button>
           </div>
         </section>
 
