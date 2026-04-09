@@ -25,3 +25,4 @@ jobs:
             npx prisma generate
             cd ..
             pm2 startOrRestart pm2.config.cjs --only store-attention
+            pm2 save

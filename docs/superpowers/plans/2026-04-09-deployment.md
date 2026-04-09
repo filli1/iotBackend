@@ -378,7 +378,7 @@ sudo -u deploy bash -c "
 ```bash
 sudo -u deploy bash -c "
   cd /home/deploy/store-attention &&
-  pm2 start --name store-attention --interpreter node_modules/.bin/tsx backend/src/index.ts --env-file backend/.env &&
+  pm2 startOrRestart pm2.config.cjs --only store-attention &&
   pm2 save
 "
 pm2 startup systemd -u deploy --hp /home/deploy
