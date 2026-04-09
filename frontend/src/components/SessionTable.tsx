@@ -14,7 +14,7 @@ export function SessionTable({ sessions, sortBy, sortDir, onSort }: Props) {
     <table className="w-full text-sm">
       <thead>
         <tr className="text-left text-gray-400 border-b border-gray-700">
-          {[['unitName','Unit'],['startedAt','Started'],['dwellSeconds','Dwell'],['productPickedUp','Pickup']].map(([col, label]) => (
+          {[['unitName','Unit'],['startedAt','Started'],['dwellSeconds','Dwell'],['productInteracted','Interacted']].map(([col, label]) => (
             <th
               key={col}
               onClick={() => onSort(col)}
@@ -31,8 +31,8 @@ export function SessionTable({ sessions, sortBy, sortDir, onSort }: Props) {
             <td className="py-2 pr-4">{s.unitName}</td>
             <td className="py-2 pr-4 text-gray-300 tabular-nums">{new Date(s.startedAt).toLocaleString()}</td>
             <td className="py-2 pr-4 tabular-nums">{formatDwell(s.dwellSeconds)}</td>
-            <td className={`py-2 ${s.productPickedUp ? 'text-green-400' : 'text-gray-500'}`}>
-              {s.productPickedUp ? 'Yes' : 'No'}
+            <td className={`py-2 ${s.productInteracted ? 'text-green-400' : 'text-gray-500'}`}>
+              {s.productInteracted ? 'Yes' : 'No'}
             </td>
           </tr>
         ))}
