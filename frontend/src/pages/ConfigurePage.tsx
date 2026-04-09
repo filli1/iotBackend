@@ -20,7 +20,7 @@ type UserOption = {
 
 export function ConfigurePage() {
   const { unitId } = useParams<{ unitId: string }>()
-  const { config, loading, saving, saved, error, save } = useUnitConfig(unitId!)
+  const { config, loading, saving, saved, error, save, reload } = useUnitConfig(unitId!)
   const [draft, setDraft] = useState<FullConfig | null>(null)
   const [apiKey, setApiKey] = useState<string | null>(null)
   const [keyCopied, setKeyCopied] = useState(false)
@@ -75,6 +75,29 @@ export function ConfigurePage() {
       setKeyCopied(true)
       setTimeout(() => setKeyCopied(false), 2000)
     })
+  }
+
+  const handleAddSensor = async () => {
+    if (!draft || draft.sensors.length >= 6) return
+    try {
+      await apiFetch(`/api/units/${unitId}/sensors`, {
+        method: 'POST',
+        body: JSON.stringify({ label: `sensor-${draft.sensors.length + 1}`, minDist: 50, maxDist: 1000 }),
+      })
+      await reload()
+    } catch (err: unknown) {
+      console.error('Failed to add sensor:', err)
+    }
+  }
+
+  const handleRemoveSensor = async (index: number) => {
+    if (!draft || draft.sensors.length <= 1) return
+    try {
+      await apiFetch(`/api/units/${unitId}/sensors/${index}`, { method: 'DELETE' })
+      await reload()
+    } catch (err: unknown) {
+      console.error('Failed to remove sensor:', err)
+    }
   }
 
   if (loading || !draft) return <div className="p-6">Loading…</div>
@@ -135,8 +158,9 @@ export function ConfigurePage() {
               <tr className="text-gray-400 text-left">
                 <th className="pb-2">Index</th>
                 <th className="pb-2">Label<Tooltip text="A human-readable name for this sensor, shown in calibration view." /></th>
-                <th className="pb-2">Min (mm)<Tooltip text="Minimum distance a reading must be to count as a detection. Filters out objects too close to the sensor." /></th>
-                <th className="pb-2">Max (mm)<Tooltip text="Maximum distance a reading counts as a detection. Sets the sensing range of the stand." /></th>
+                <th className="pb-2">Min (mm)<Tooltip text="Minimum distance a reading must be to count as a detection." /></th>
+                <th className="pb-2">Max (mm)<Tooltip text="Maximum distance a reading counts as a detection." /></th>
+                <th className="pb-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -146,11 +170,31 @@ export function ConfigurePage() {
                   <td className="py-2 pr-4"><input value={s.label} onChange={e => setSensor(s.index, 'label', e.target.value)} className="bg-gray-700 text-white rounded px-2 py-1 text-sm w-36" /></td>
                   <td className="py-2 pr-4">{numInput(s.minDist, v => setSensor(s.index, 'minDist', v), 10, 500)}</td>
                   <td className="py-2">{numInput(s.maxDist, v => setSensor(s.index, 'maxDist', v), 100, 4000)}</td>
+                  <td className="py-2 pl-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSensor(s.index)}
+                      disabled={draft.sensors.length <= 1}
+                      className="text-red-400 hover:text-red-300 text-xs disabled:opacity-30"
+                    >
+                      Remove
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <Link to={`/calibrate/${unitId}`} target="_blank" className="text-blue-400 text-xs mt-2 inline-block hover:text-blue-300">Open Calibration Mode ↗</Link>
+          <div className="flex items-center gap-4 mt-2">
+            <button
+              type="button"
+              onClick={handleAddSensor}
+              disabled={draft.sensors.length >= 6}
+              className="text-blue-400 hover:text-blue-300 text-xs disabled:opacity-30"
+            >
+              + Add sensor
+            </button>
+            <Link to={`/calibrate/${unitId}`} target="_blank" className="text-blue-400 text-xs hover:text-blue-300">Open Calibration Mode ↗</Link>
+          </div>
         </section>
 
         {/* Detection Logic */}
@@ -158,9 +202,9 @@ export function ConfigurePage() {
           <h2 className="text-lg font-semibold mb-3">Detection Logic</h2>
           <div className="space-y-3">
             {([
-              ['Min sensor agreement', 'minSensorAgreement', 1, 6, 'How many ToF sensors must simultaneously detect presence. Higher values reduce false positives but may miss detections.'],
-              ['Dwell minimum (s)', 'dwellMinSeconds', 1, 30, 'How long presence must be continuously detected before a session starts. Prevents brief passersby from creating sessions.'],
-              ['Departure timeout (s)', 'departureTimeoutSeconds', 1, 30, 'How long absence must persist before the session ends. Allows brief movements away from the stand without ending the session.'],
+              ['Min sensor agreement', 'minSensorAgreement', 1, 6, 'How many ToF sensors must simultaneously detect presence.'],
+              ['Dwell minimum (s)', 'dwellMinSeconds', 1, 30, 'How long presence must be continuously detected before a session starts.'],
+              ['Departure timeout (s)', 'departureTimeoutSeconds', 1, 30, 'How long absence must persist before the session ends.'],
             ] as [string, keyof FullConfig['configuration'], number, number, string][]).map(([label, field, min, max, tip]) => (
               <div key={field} className="flex items-center justify-between">
                 <span className="text-gray-300 text-sm flex items-center">{label}<Tooltip text={tip} /></span>
@@ -174,9 +218,22 @@ export function ConfigurePage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">IMU</h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Pickup threshold (g)<Tooltip text="Acceleration force (in g) the IMU must measure to register a product pickup event." /></span>{numInput(draft.configuration.imuPickupThresholdG, v => setConfig('imuPickupThresholdG', v), 0.5, 5)}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Examination enabled<Tooltip text="Enables detection of sustained product examination based on how long the IMU registers movement." /></span>{toggle(draft.configuration.imuExaminationEnabled, v => setConfig('imuExaminationEnabled', v))}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Duration threshold (ms)<Tooltip text="How long IMU movement must be sustained to count as a product examination event." /></span>{numInput(draft.configuration.imuDurationThresholdMs, v => setConfig('imuDurationThresholdMs', v), 100, 2000)}</div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300 text-sm flex items-center">IMU enabled<Tooltip text="Enable vibration-based product interaction detection. Disable if no IMU is installed." /></span>
+              {toggle(draft.configuration.imuEnabled, v => setConfig('imuEnabled', v))}
+            </div>
+            {draft.configuration.imuEnabled && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300 text-sm flex items-center">Vibration threshold (g RMS)<Tooltip text="Minimum vibration intensity (g RMS) the IMU must measure to register a product interaction event." /></span>
+                  {numInput(draft.configuration.imuVibrationThreshold, v => setConfig('imuVibrationThreshold', v), 0, 5)}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300 text-sm flex items-center">Duration threshold (ms)<Tooltip text="How long the vibration must be sustained to count as a product interaction event." /></span>
+                  {numInput(draft.configuration.imuDurationThresholdMs, v => setConfig('imuDurationThresholdMs', v), 100, 2000)}
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -186,7 +243,7 @@ export function ConfigurePage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Alert enabled<Tooltip text="When enabled, a WhatsApp alert is sent to all subscribers when the rule conditions are met." /></span>{toggle(draft.alertRule.enabled, v => setAlert('enabled', v))}</div>
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Dwell threshold (s)<Tooltip text="Customer must be present for at least this many seconds before an alert is sent." /></span>{numInput(draft.alertRule.dwellThresholdSeconds, v => setAlert('dwellThresholdSeconds', v), 1, 300)}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Require pickup<Tooltip text="If enabled, the alert only fires if the customer also picked up the product — not just stood nearby." /></span>{toggle(draft.alertRule.requirePickup, v => setAlert('requirePickup', v))}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Require interaction<Tooltip text="If enabled, the alert only fires if the customer also interacted with the product." /></span>{toggle(draft.alertRule.requireInteraction, v => setAlert('requireInteraction', v))}</div>
           </div>
         </section>
 
@@ -197,7 +254,6 @@ export function ConfigurePage() {
             Users subscribed here receive a WhatsApp alert when this unit's alert rule fires.
             A valid phone number must be set on the user account.
           </p>
-
           {subscribers.length === 0 ? (
             <p className="text-gray-500 text-sm">No subscribers yet.</p>
           ) : (
@@ -215,26 +271,15 @@ export function ConfigurePage() {
                     <td className="py-2 pr-4">{s.email}</td>
                     <td className="py-2 pr-4 text-gray-400">{s.phoneNumber ?? '—'}</td>
                     <td className="py-2">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSubscriber(s.userId)}
-                        className="text-red-400 hover:text-red-300 text-xs"
-                      >
-                        Remove
-                      </button>
+                      <button type="button" onClick={() => handleRemoveSubscriber(s.userId)} className="text-red-400 hover:text-red-300 text-xs">Remove</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-
           <div className="flex items-center gap-3">
-            <select
-              value={addUserId}
-              onChange={e => setAddUserId(e.target.value)}
-              className="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-sm"
-            >
+            <select value={addUserId} onChange={e => setAddUserId(e.target.value)} className="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-sm">
               <option value="">Add a user…</option>
               {allUsers
                 .filter(u => !subscribers.some(s => s.userId === u.id))
@@ -244,14 +289,7 @@ export function ConfigurePage() {
                   </option>
                 ))}
             </select>
-            <button
-              type="button"
-              onClick={handleAddSubscriber}
-              disabled={!addUserId}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50"
-            >
-              Add
-            </button>
+            <button type="button" onClick={handleAddSubscriber} disabled={!addUserId} className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm disabled:opacity-50">Add</button>
           </div>
         </section>
 
@@ -263,15 +301,8 @@ export function ConfigurePage() {
             It must be sent as the <code className="bg-gray-700 px-1 rounded">X-Api-Key</code> header on every POST.
           </p>
           <div className="flex items-center gap-3">
-            <code className="flex-1 bg-gray-900 text-green-400 text-sm px-3 py-2 rounded font-mono break-all">
-              {apiKey ?? '…'}
-            </code>
-            <button
-              onClick={copyKey}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm flex-shrink-0"
-            >
-              {keyCopied ? 'Copied ✓' : 'Copy'}
-            </button>
+            <code className="flex-1 bg-gray-900 text-green-400 text-sm px-3 py-2 rounded font-mono break-all">{apiKey ?? '…'}</code>
+            <button onClick={copyKey} className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm flex-shrink-0">{keyCopied ? 'Copied ✓' : 'Copy'}</button>
           </div>
         </section>
 
