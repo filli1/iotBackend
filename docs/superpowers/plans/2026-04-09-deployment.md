@@ -262,14 +262,16 @@ jobs:
             npm run build -w frontend
             cd backend
             npx prisma migrate deploy
+            npx prisma generate
             cd ..
-            pm2 restart store-attention
+            pm2 startOrRestart pm2.config.cjs --only store-attention
+            pm2 save
 ```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .github/workflows/deploy.yml
+git add .github/workflows/deploy.yml pm2.config.cjs
 git commit -m "feat: add GitHub Actions workflow for automatic deploy to DigitalOcean on push to main"
 ```
 
@@ -449,7 +451,7 @@ Make a trivial change on your local machine, push to `main`, and watch the Actio
 **Spec coverage:**
 - ✅ CORS_ORIGIN env var — Task 2
 - ✅ frontend build script — Task 1
-- ✅ GitHub Actions workflow (git pull, npm ci, build, migrate, pm2 restart) — Task 3
+- ✅ GitHub Actions workflow (git pull, npm ci, build, migrate, generate, pm2 startOrRestart, pm2 save) — Task 3
 - ✅ Droplet setup (Node 20, nginx, PM2, deploy user, SSH key) — Task 4
 - ✅ .env file on droplet with all secrets — Task 4 Step 8
 - ✅ GitHub Secrets (DROPLET_IP, DEPLOY_SSH_PRIVATE_KEY) — Task 4 Step 6
