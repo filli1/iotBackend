@@ -29,8 +29,8 @@ export function EventFeedEntryRow({ entry }: Props) {
         {isEnded && entry.dwellSeconds !== undefined && (
           <span className="text-gray-400 font-normal ml-2">
             ⏱ {formatDwell(entry.dwellSeconds)}
-            {entry.productPickedUp !== undefined && (
-              <span className="ml-2">📦 {entry.productPickedUp ? 'Yes' : 'No'}</span>
+            {entry.productInteracted !== undefined && (
+              <span className="ml-2">📦 {entry.productInteracted ? 'Yes' : 'No'}</span>
             )}
           </span>
         )}
