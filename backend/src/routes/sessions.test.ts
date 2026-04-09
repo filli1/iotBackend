@@ -14,7 +14,7 @@ const UNIT_ID = 'sessions-test-unit'
 
 beforeAll(async () => {
   await prisma.sensorUnit.create({
-    data: { id: UNIT_ID, name: 'Test', location: 'L', productName: 'P', ipAddress: '1.1.1.1' },
+    data: { id: UNIT_ID, name: 'Test', location: 'L', productName: 'P', apiKey: 'sessions-test-key' },
   })
   const now = new Date()
   await prisma.presenceSession.createMany({

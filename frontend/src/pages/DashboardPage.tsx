@@ -3,7 +3,6 @@ import { useWebSocket } from '../hooks/useWebSocket'
 import { SensorUnitCard } from '../components/SensorUnitCard'
 import { ConnectionBanner } from '../components/ConnectionBanner'
 import { AlertBanner } from '../components/AlertBanner'
-import { AccountMenu } from '../components/AccountMenu'
 import { apiFetch } from '../lib/api'
 import type { Unit } from '../hooks/useUnits'
 import { EventFeed } from '../components/EventFeed'
@@ -27,14 +26,11 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="flex-1 flex flex-col overflow-hidden">
       <AlertBanner />
       <ConnectionBanner />
-      <div className="p-6 h-screen flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Live Dashboard</h1>
-          <AccountMenu />
-        </div>
+      <div className="p-6 flex-1 flex flex-col overflow-hidden">
+        <h1 className="text-2xl font-bold mb-4">Live Dashboard</h1>
         <div className="flex-1 flex gap-4 overflow-hidden">
           <div className="flex-1 overflow-y-auto">
             {registeredUnits.length === 0 ? (

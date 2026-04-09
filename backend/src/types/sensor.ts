@@ -4,11 +4,6 @@ export type TofReading = {
   status: 'valid' | 'out_of_range' | 'error'
 }
 
-export type PirState = {
-  triggered: boolean
-  last_trigger_ms: number
-}
-
 export type ImuVector = { x: number; y: number; z: number }
 
 export type ImuState = {
@@ -21,11 +16,10 @@ export type SensorReading = {
   unit_id: string
   ts: number
   tof: TofReading[]
-  pir: PirState
   imu: ImuState
 }
 
-export type HardwareEventType = 'pir_trigger' | 'imu_shock' | 'imu_pickup' | 'imu_rotation'
+export type HardwareEventType = 'imu_shock' | 'imu_pickup' | 'imu_rotation'
 
 export type HardwareEvent = {
   unit_id: string

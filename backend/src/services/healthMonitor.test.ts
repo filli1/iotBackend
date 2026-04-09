@@ -8,7 +8,6 @@ const makeReading = (sensorValues: { id: number; mm: number; status?: string }[]
   unit_id: 'unit-01',
   ts: Date.now(),
   tof: sensorValues.map(s => ({ id: s.id, distance_mm: s.mm, status: (s.status ?? 'valid') as 'valid' | 'out_of_range' | 'error' })),
-  pir: { triggered: false, last_trigger_ms: 0 },
   imu: { accel: { x: 0.02, y: 0.98, z: 0.01 }, gyro: { x: 0, y: 0, z: 0 }, mag: { x: 0, y: 0, z: 0 } },
 })
 

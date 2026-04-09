@@ -84,8 +84,6 @@ model UnitConfiguration {
   minSensorAgreement      Int     @default(2)
   departureTimeoutSeconds Int     @default(5)
   dwellMinSeconds         Int     @default(3)
-  pirEnabled              Boolean @default(true)
-  pirCooldownSeconds      Int     @default(10)
   imuPickupThresholdG     Float   @default(1.5)
   imuExaminationEnabled   Boolean @default(true)
   imuDurationThresholdMs  Int     @default(500)

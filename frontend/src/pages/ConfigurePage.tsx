@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useUnitConfig } from '../hooks/useUnitConfig'
 import type { FullConfig } from '../hooks/useUnitConfig'
 import { apiFetch } from '../lib/api'
+import { Tooltip } from '../components/Tooltip'
 
 type Subscriber = {
   userId: string
@@ -76,8 +77,8 @@ export function ConfigurePage() {
     })
   }
 
-  if (loading || !draft) return <div className="min-h-screen bg-gray-950 text-white p-6">Loading…</div>
-  if (error) return <div className="min-h-screen bg-gray-950 text-red-400 p-6">{error}</div>
+  if (loading || !draft) return <div className="p-6">Loading…</div>
+  if (error) return <div className="p-6 text-red-400">{error}</div>
 
   const setConfig = (field: keyof FullConfig['configuration'], value: number | boolean) =>
     setDraft(d => d ? { ...d, configuration: { ...d.configuration, [field]: value } } : d)
@@ -119,7 +120,7 @@ export function ConfigurePage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <div className="p-6">
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="flex items-center gap-4">
           <Link to="/setup/units" className="text-gray-400 hover:text-white text-sm">← Units</Link>
@@ -130,7 +131,14 @@ export function ConfigurePage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">ToF Sensors</h2>
           <table className="w-full text-sm">
-            <thead><tr className="text-gray-400 text-left"><th className="pb-2">Index</th><th className="pb-2">Label</th><th className="pb-2">Min (mm)</th><th className="pb-2">Max (mm)</th></tr></thead>
+            <thead>
+              <tr className="text-gray-400 text-left">
+                <th className="pb-2">Index</th>
+                <th className="pb-2">Label<Tooltip text="A human-readable name for this sensor, shown in calibration view." /></th>
+                <th className="pb-2">Min (mm)<Tooltip text="Minimum distance a reading must be to count as a detection. Filters out objects too close to the sensor." /></th>
+                <th className="pb-2">Max (mm)<Tooltip text="Maximum distance a reading counts as a detection. Sets the sensing range of the stand." /></th>
+              </tr>
+            </thead>
             <tbody>
               {draft.sensors.map(s => (
                 <tr key={s.index} className="border-t border-gray-800">
@@ -150,24 +158,15 @@ export function ConfigurePage() {
           <h2 className="text-lg font-semibold mb-3">Detection Logic</h2>
           <div className="space-y-3">
             {([
-              ['Min sensor agreement', 'minSensorAgreement', 1, 6],
-              ['Dwell minimum (s)', 'dwellMinSeconds', 1, 30],
-              ['Departure timeout (s)', 'departureTimeoutSeconds', 1, 30],
-            ] as [string, keyof FullConfig['configuration'], number, number][]).map(([label, field, min, max]) => (
+              ['Min sensor agreement', 'minSensorAgreement', 1, 6, 'How many ToF sensors must simultaneously detect presence. Higher values reduce false positives but may miss detections.'],
+              ['Dwell minimum (s)', 'dwellMinSeconds', 1, 30, 'How long presence must be continuously detected before a session starts. Prevents brief passersby from creating sessions.'],
+              ['Departure timeout (s)', 'departureTimeoutSeconds', 1, 30, 'How long absence must persist before the session ends. Allows brief movements away from the stand without ending the session.'],
+            ] as [string, keyof FullConfig['configuration'], number, number, string][]).map(([label, field, min, max, tip]) => (
               <div key={field} className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">{label}</span>
+                <span className="text-gray-300 text-sm flex items-center">{label}<Tooltip text={tip} /></span>
                 {numInput(draft.configuration[field] as number, v => setConfig(field, v), min, max)}
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* PIR */}
-        <section>
-          <h2 className="text-lg font-semibold mb-3">PIR</h2>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">PIR enabled</span>{toggle(draft.configuration.pirEnabled, v => setConfig('pirEnabled', v))}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Cooldown (s)</span>{numInput(draft.configuration.pirCooldownSeconds, v => setConfig('pirCooldownSeconds', v), 1, 60)}</div>
           </div>
         </section>
 
@@ -175,9 +174,9 @@ export function ConfigurePage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">IMU</h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Pickup threshold (g)</span>{numInput(draft.configuration.imuPickupThresholdG, v => setConfig('imuPickupThresholdG', v), 0.5, 5)}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Examination enabled</span>{toggle(draft.configuration.imuExaminationEnabled, v => setConfig('imuExaminationEnabled', v))}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Duration threshold (ms)</span>{numInput(draft.configuration.imuDurationThresholdMs, v => setConfig('imuDurationThresholdMs', v), 100, 2000)}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Pickup threshold (g)<Tooltip text="Acceleration force (in g) the IMU must measure to register a product pickup event." /></span>{numInput(draft.configuration.imuPickupThresholdG, v => setConfig('imuPickupThresholdG', v), 0.5, 5)}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Examination enabled<Tooltip text="Enables detection of sustained product examination based on how long the IMU registers movement." /></span>{toggle(draft.configuration.imuExaminationEnabled, v => setConfig('imuExaminationEnabled', v))}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Duration threshold (ms)<Tooltip text="How long IMU movement must be sustained to count as a product examination event." /></span>{numInput(draft.configuration.imuDurationThresholdMs, v => setConfig('imuDurationThresholdMs', v), 100, 2000)}</div>
           </div>
         </section>
 
@@ -185,9 +184,9 @@ export function ConfigurePage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">Alert Rule</h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Alert enabled</span>{toggle(draft.alertRule.enabled, v => setAlert('enabled', v))}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Dwell threshold (s)</span>{numInput(draft.alertRule.dwellThresholdSeconds, v => setAlert('dwellThresholdSeconds', v), 1, 300)}</div>
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm">Require pickup</span>{toggle(draft.alertRule.requirePickup, v => setAlert('requirePickup', v))}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Alert enabled<Tooltip text="When enabled, a WhatsApp alert is sent to all subscribers when the rule conditions are met." /></span>{toggle(draft.alertRule.enabled, v => setAlert('enabled', v))}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Dwell threshold (s)<Tooltip text="Customer must be present for at least this many seconds before an alert is sent." /></span>{numInput(draft.alertRule.dwellThresholdSeconds, v => setAlert('dwellThresholdSeconds', v), 1, 300)}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Require pickup<Tooltip text="If enabled, the alert only fires if the customer also picked up the product — not just stood nearby." /></span>{toggle(draft.alertRule.requirePickup, v => setAlert('requirePickup', v))}</div>
           </div>
         </section>
 

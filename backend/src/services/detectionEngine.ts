@@ -9,8 +9,6 @@ type UnitConfig = {
   imuPickupThresholdG: number
   imuExaminationEnabled: boolean
   imuDurationThresholdMs: number
-  pirEnabled: boolean
-  pirCooldownSeconds: number
 }
 
 type SessionState = 'idle' | 'pending' | 'active' | 'departing'

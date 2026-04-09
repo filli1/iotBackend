@@ -13,7 +13,8 @@ describe('prisma client', () => {
         name: 'Test',
         location: 'Lab',
         productName: 'Widget',
-        ipAddress: '192.168.1.1',
+
+        apiKey: 'test-key-1',
       },
     })
 
@@ -31,7 +32,8 @@ describe('prisma client', () => {
         name: 'Test',
         location: 'Lab',
         productName: 'Widget',
-        ipAddress: '192.168.1.1',
+
+        apiKey: 'test-key-2',
         tofSensors: {
           create: { index: 1, label: 'left', minDist: 50, maxDist: 1000 },
         },

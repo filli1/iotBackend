@@ -43,7 +43,6 @@ describe('POST /api/sensors/data', () => {
           { id: 5, distance_mm: 4000, status: 'out_of_range' },
           { id: 6, distance_mm: 4000, status: 'out_of_range' },
         ],
-        pir: { triggered: false, last_trigger_ms: 0 },
         imu: {
           accel: { x: 0.02, y: 0.98, z: 0.01 },
           gyro: { x: 0.5, y: -0.3, z: 0.1 },
@@ -80,7 +79,6 @@ describe('POST /api/sensors/data', () => {
         unit_id: 'unit-99',
         ts: Date.now(),
         tof: [],
-        pir: { triggered: false, last_trigger_ms: 0 },
         imu: {
           accel: { x: 0, y: 0, z: 0 },
           gyro: { x: 0, y: 0, z: 0 },
@@ -100,7 +98,6 @@ describe('POST /api/sensors/data', () => {
         unit_id: 'unit-01',
         ts: Date.now(),
         tof: [],
-        pir: { triggered: false, last_trigger_ms: 0 },
         imu: {
           accel: { x: 0, y: 0, z: 0 },
           gyro: { x: 0, y: 0, z: 0 },

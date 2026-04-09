@@ -4,6 +4,7 @@ import type { UnitRegistry } from '../lib/unitRegistry'
 import type { SensorReading, HardwareEvent } from '../types/sensor'
 import { isSensorReading } from '../types/sensor'
 import type { HealthMonitor } from '../services/healthMonitor'
+import { prisma } from '../lib/prisma'
 
 const ImuVector = Type.Object({ x: Type.Number(), y: Type.Number(), z: Type.Number() })
 
@@ -15,7 +16,6 @@ const SensorReadingSchema = Type.Object({
     distance_mm: Type.Number(),
     status: Type.Union([Type.Literal('valid'), Type.Literal('out_of_range'), Type.Literal('error')]),
   })),
-  pir: Type.Object({ triggered: Type.Boolean(), last_trigger_ms: Type.Number() }),
   imu: Type.Object({ accel: ImuVector, gyro: ImuVector, mag: ImuVector }),
 })
 
@@ -23,7 +23,6 @@ const HardwareEventSchema = Type.Object({
   unit_id: Type.String(),
   ts: Type.Number(),
   event: Type.Union([
-    Type.Literal('pir_trigger'),
     Type.Literal('imu_shock'),
     Type.Literal('imu_pickup'),
     Type.Literal('imu_rotation'),
@@ -49,6 +48,15 @@ export const sensorRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, o
 
       if (!opts.registry.isKnown(payload.unit_id)) {
         return reply.status(404).send({ error: 'Unknown unit_id' })
+      }
+
+      const apiKey = request.headers['x-api-key']
+      const unit = await prisma.sensorUnit.findUnique({
+        where: { id: payload.unit_id },
+        select: { apiKey: true },
+      })
+      if (!unit || unit.apiKey !== apiKey) {
+        return reply.status(401).send({ error: 'Invalid API key' })
       }
 
       opts.registry.markSeen(payload.unit_id)

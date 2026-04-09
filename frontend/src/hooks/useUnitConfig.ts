@@ -6,7 +6,7 @@ export type TofSensorConfig = {
 }
 export type UnitConfig = {
   id: string; minSensorAgreement: number; departureTimeoutSeconds: number
-  dwellMinSeconds: number; pirEnabled: boolean; pirCooldownSeconds: number
+  dwellMinSeconds: number;
   imuPickupThresholdG: number; imuExaminationEnabled: boolean; imuDurationThresholdMs: number
 }
 export type AlertRuleConfig = {

@@ -8,7 +8,7 @@ export function AnalyticsPage() {
   const { summary, daily, heatmap, dwellTrend, loading } = useAnalytics()
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-6">
+    <div className="p-6">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">Analytics</h1>
 

@@ -6,7 +6,6 @@ export type Unit = {
   name: string
   location: string
   productName: string
-  ipAddress: string
   online: boolean
   lastSeen: string | null
   createdAt: string
@@ -36,10 +35,15 @@ export function useUnits() {
     await load()
   }
 
+  const updateUnit = async (unitId: string, body: Partial<Pick<Unit, 'location' | 'productName'>>) => {
+    await apiFetch(`/api/units/${unitId}`, { method: 'PATCH', body: JSON.stringify(body) })
+    await load()
+  }
+
   const deleteUnit = async (unitId: string) => {
     await apiFetch(`/api/units/${unitId}`, { method: 'DELETE' })
     await load()
   }
 
-  return { units, loading, error, createUnit, deleteUnit, reload: load }
+  return { units, loading, error, createUnit, updateUnit, deleteUnit, reload: load }
 }

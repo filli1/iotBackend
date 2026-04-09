@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { Type, type Static } from '@fastify/type-provider-typebox'
 import type { FastifyPluginAsync } from 'fastify'
 import { Prisma } from '@prisma/client'
@@ -7,12 +8,14 @@ import type { DetectionEngine } from '../services/detectionEngine'
 
 const DEFAULT_TOF_LABELS = ['left-wide', 'left', 'center-left', 'center-right', 'right', 'right-wide']
 
+function generateApiKey(): string {
+  return randomBytes(24).toString('hex')
+}
+
 const CreateUnitBody = Type.Object({
   id: Type.String({ minLength: 3, maxLength: 32 }),
-  name: Type.String({ minLength: 1 }),
   location: Type.String({ minLength: 1 }),
   productName: Type.String({ minLength: 1 }),
-  ipAddress: Type.String({ minLength: 1 }),
 })
 
 type PluginOptions = { registry: UnitRegistry; engine: DetectionEngine }
@@ -22,14 +25,15 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     '/api/units',
     { schema: { body: CreateUnitBody } },
     async (request, reply) => {
-      const { id, name, location, productName, ipAddress } = request.body as Static<typeof CreateUnitBody>
+      const { id, location, productName } = request.body as Static<typeof CreateUnitBody>
 
       const existing = await prisma.sensorUnit.findUnique({ where: { id } })
       if (existing) return reply.status(409).send({ error: 'Unit ID already exists' })
 
       const unit = await prisma.sensorUnit.create({
         data: {
-          id, name, location, productName, ipAddress,
+          id, name: productName, location, productName,
+          apiKey: generateApiKey(),
           configuration: {
             create: {},
           },
@@ -62,6 +66,30 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     }
   })
 
+  const PatchUnitBody = Type.Object({
+    location: Type.Optional(Type.String({ minLength: 1 })),
+    productName: Type.Optional(Type.String({ minLength: 1 })),
+  })
+
+  fastify.patch(
+    '/api/units/:unitId',
+    { schema: { body: PatchUnitBody } },
+    async (request, reply) => {
+      const { unitId } = request.params as { unitId: string }
+      const body = request.body as Static<typeof PatchUnitBody>
+      const data = { ...body, ...(body.productName && { name: body.productName }) }
+      try {
+        const unit = await prisma.sensorUnit.update({ where: { id: unitId }, data })
+        return reply.send(unit)
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+          return reply.status(404).send({ error: 'Unit not found' })
+        }
+        throw e
+      }
+    }
+  )
+
   fastify.delete('/api/units/:unitId', async (request, reply) => {
     const { unitId } = request.params as { unitId: string }
     try {
@@ -93,13 +121,18 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     return { sensors }
   })
 
+  fastify.get('/api/units/:unitId/api-key', async (request, reply) => {
+    const { unitId } = request.params as { unitId: string }
+    const unit = await prisma.sensorUnit.findUnique({ where: { id: unitId }, select: { apiKey: true } })
+    if (!unit) return reply.status(404).send({ error: 'Unit not found' })
+    return { apiKey: unit.apiKey }
+  })
+
   const PatchConfigBody = Type.Object({
     configuration: Type.Optional(Type.Partial(Type.Object({
       minSensorAgreement: Type.Number({ minimum: 1, maximum: 6 }),
       departureTimeoutSeconds: Type.Number({ minimum: 1, maximum: 30 }),
       dwellMinSeconds: Type.Number({ minimum: 1, maximum: 30 }),
-      pirEnabled: Type.Boolean(),
-      pirCooldownSeconds: Type.Number({ minimum: 1, maximum: 60 }),
       imuPickupThresholdG: Type.Number({ minimum: 0.5, maximum: 5 }),
       imuExaminationEnabled: Type.Boolean(),
       imuDurationThresholdMs: Type.Number({ minimum: 100, maximum: 2000 }),

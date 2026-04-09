@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 
 export type TofReading = { id: number; distance_mm: number; status: 'valid' | 'out_of_range' | 'error' }
-export type PirState = { triggered: boolean; last_trigger_ms: number }
 export type ImuState = { accel: { x: number; y: number; z: number }; gyro: { x: number; y: number; z: number }; mag: { x: number; y: number; z: number } }
 
 export type PresenceState = 'idle' | 'pending' | 'active' | 'departing'
@@ -12,7 +11,6 @@ export type UnitLiveState = {
   lastSeen: string | null
   presenceState: PresenceState
   tof: TofReading[]
-  pir: PirState | null
   imu: ImuState | null
   lastEvent: { event: string; ts: string } | null
 }
@@ -73,7 +71,6 @@ export const useWsStore = create<WsStore>((set) => ({
             lastSeen: msg.ts as string,
             presenceState: (msg.presenceState as PresenceState) ?? state.units[unitId]?.presenceState ?? 'idle',
             tof: msg.tof as TofReading[],
-            pir: msg.pir as PirState,
             imu: msg.imu as ImuState,
             lastEvent: state.units[unitId]?.lastEvent ?? null,
           },

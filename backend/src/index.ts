@@ -87,7 +87,6 @@ const start = async () => {
         unitId,
         ts: new Date().toISOString(),
         tof: reading.tof,
-        pir: reading.pir,
         imu: reading.imu,
       })
       engine.process(unitId, reading)

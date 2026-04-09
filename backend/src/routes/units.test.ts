@@ -30,7 +30,7 @@ describe('/api/units', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/units',
-      payload: { id: 'reg-test-01', name: 'Stand A', location: 'Aisle 1', productName: 'Widget', ipAddress: '192.168.1.10' },
+      payload: { id: 'reg-test-01', name: 'Stand A', location: 'Aisle 1', productName: 'Widget', },
     })
     expect(res.statusCode).toBe(201)
     const body = JSON.parse(res.body)
@@ -42,12 +42,12 @@ describe('/api/units', () => {
     await app.inject({
       method: 'POST',
       url: '/api/units',
-      payload: { id: 'reg-test-02', name: 'Stand B', location: 'Aisle 2', productName: 'Gadget', ipAddress: '192.168.1.11' },
+      payload: { id: 'reg-test-02', name: 'Stand B', location: 'Aisle 2', productName: 'Gadget', },
     })
     const res = await app.inject({
       method: 'POST',
       url: '/api/units',
-      payload: { id: 'reg-test-02', name: 'Stand B', location: 'Aisle 2', productName: 'Gadget', ipAddress: '192.168.1.11' },
+      payload: { id: 'reg-test-02', name: 'Stand B', location: 'Aisle 2', productName: 'Gadget', },
     })
     expect(res.statusCode).toBe(409)
   })
@@ -57,7 +57,7 @@ describe('/api/units', () => {
     await app.inject({
       method: 'POST',
       url: '/api/units',
-      payload: { id: 'reg-test-01', name: 'Stand A', location: 'Aisle 1', productName: 'Widget', ipAddress: '192.168.1.10' },
+      payload: { id: 'reg-test-01', name: 'Stand A', location: 'Aisle 1', productName: 'Widget', },
     })
     const res = await app.inject({ method: 'GET', url: '/api/units' })
     expect(res.statusCode).toBe(200)
@@ -70,7 +70,7 @@ describe('/api/units', () => {
     await app.inject({
       method: 'POST',
       url: '/api/units',
-      payload: { id: 'reg-test-01', name: 'Stand A', location: 'Aisle 1', productName: 'Widget', ipAddress: '192.168.1.10' },
+      payload: { id: 'reg-test-01', name: 'Stand A', location: 'Aisle 1', productName: 'Widget', },
     })
     const res = await app.inject({ method: 'DELETE', url: '/api/units/reg-test-01' })
     expect(res.statusCode).toBe(200)
@@ -83,7 +83,7 @@ describe('/api/units', () => {
     // Create unit first
     await app.inject({
       method: 'POST', url: '/api/units',
-      payload: { id: 'config-unit-01', name: 'C', location: 'L', productName: 'P', ipAddress: '1.1.1.1' },
+      payload: { id: 'config-unit-01', name: 'C', location: 'L', productName: 'P', },
     })
     const res = await app.inject({ method: 'GET', url: '/api/units/config-unit-01/config' })
     expect(res.statusCode).toBe(200)
@@ -97,7 +97,7 @@ describe('/api/units', () => {
     const app = buildApp(registry)
     await app.inject({
       method: 'POST', url: '/api/units',
-      payload: { id: 'config-unit-01', name: 'C', location: 'L', productName: 'P', ipAddress: '1.1.1.1' },
+      payload: { id: 'config-unit-01', name: 'C', location: 'L', productName: 'P', },
     })
     const res = await app.inject({
       method: 'PATCH', url: '/api/units/config-unit-01/config',

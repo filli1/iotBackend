@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useWsStore } from '../lib/wsStore'
 import { TofGrid } from './TofGrid'
-import { PirBadge } from './PirBadge'
 import { ImuBadge } from './ImuBadge'
 import { HealthWarningBar } from './HealthWarningBar'
 
@@ -65,7 +64,6 @@ export function SensorUnitCard({ unitId, unitName, subscribed, onSubscribeToggle
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 flex-wrap">
-          <PirBadge triggered={unit?.pir?.triggered ?? false} />
           <ImuBadge lastEvent={unit?.lastEvent?.event ?? null} />
         </div>
         <Link

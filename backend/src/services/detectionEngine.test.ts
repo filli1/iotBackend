@@ -9,8 +9,6 @@ const defaultConfig = {
   imuPickupThresholdG: 1.5,
   imuExaminationEnabled: true,
   imuDurationThresholdMs: 500,
-  pirEnabled: true,
-  pirCooldownSeconds: 10,
 }
 
 const makeTof = (activeCount: number) =>
@@ -24,7 +22,6 @@ const makeReading = (unitId: string, activeCount: number) => ({
   unit_id: unitId,
   ts: Date.now(),
   tof: makeTof(activeCount),
-  pir: { triggered: false, last_trigger_ms: 0 },
   imu: {
     accel: { x: 0.02, y: 0.98, z: 0.01 },
     gyro: { x: 0, y: 0, z: 0 },

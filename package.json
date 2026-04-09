@@ -1,7 +1,10 @@
 {
   "name": "store-attention",
   "private": true,
-  "workspaces": ["frontend", "backend"],
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
     "dev": "concurrently -n frontend,backend -c cyan,green \"npm run dev -w frontend\" \"npm run dev -w backend\"",
     "typecheck": "npm run typecheck -w frontend && npm run typecheck -w backend",
@@ -9,5 +12,9 @@
   },
   "devDependencies": {
     "concurrently": "^8.0.0"
+  },
+  "dependencies": {
+    "@fastify/jwt": "^8.0.1",
+    "bcryptjs": "^3.0.3"
   }
 }

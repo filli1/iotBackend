@@ -22,7 +22,7 @@ export function CalibrationPage() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white p-6">
+      <div className="p-6">
         <p className="text-red-400">Unit "{unitId}" not found.</p>
         <Link to="/setup/units" className="text-blue-400 text-sm hover:underline">← Back to Units</Link>
       </div>
@@ -32,11 +32,11 @@ export function CalibrationPage() {
   const online = unitState?.status === 'online'
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-4 max-w-lg mx-auto">
+    <div className="py-4 px-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-bold">Calibration</h1>
-          <p className="text-gray-400 text-sm">{unitId}</p>
+          <Link to={`/setup/units/${unitId}/configure`} className="text-gray-400 hover:text-white text-sm">← Configure</Link>
+          <h1 className="text-lg font-bold mt-1">Calibration — {unitId}</h1>
         </div>
         <span className={`flex items-center gap-1 text-sm ${online ? 'text-green-400' : 'text-gray-500'}`}>
           <span className={`w-2 h-2 rounded-full ${online ? 'bg-green-400' : 'bg-gray-500'}`} />
@@ -75,9 +75,6 @@ export function CalibrationPage() {
         </div>
       </div>
 
-      <Link to="/dashboard" className="mt-6 inline-block text-blue-400 text-sm hover:text-blue-300">
-        ← Back to Dashboard
-      </Link>
     </div>
   )
 }
