@@ -46,13 +46,13 @@ model TofSensor {
 }
 
 model PresenceSession {
-  id              String    @id @default(cuid())
-  unitId          String
-  startedAt       DateTime
-  endedAt         DateTime?
-  dwellSeconds    Int       @default(0)
-  productPickedUp Boolean   @default(false)
-  status          String    @default("active")
+  id                String    @id @default(cuid())
+  unitId            String
+  startedAt         DateTime
+  endedAt           DateTime?
+  dwellSeconds      Int       @default(0)
+  productInteracted Boolean   @default(false)
+  status            String    @default("active")
 
   unit   SensorUnit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
   events SessionEvent[]
@@ -72,21 +72,21 @@ model AlertRule {
   id                    String  @id @default(cuid())
   unitId                String  @unique
   dwellThresholdSeconds Int     @default(30)
-  requirePickup         Boolean @default(false)
+  requireInteraction    Boolean @default(false)
   enabled               Boolean @default(true)
 
   unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
 }
 
 model UnitConfiguration {
-  id                      String  @id @default(cuid())
-  unitId                  String  @unique
-  minSensorAgreement      Int     @default(2)
-  departureTimeoutSeconds Int     @default(5)
-  dwellMinSeconds         Int     @default(3)
-  imuPickupThresholdG     Float   @default(1.5)
-  imuExaminationEnabled   Boolean @default(true)
-  imuDurationThresholdMs  Int     @default(500)
+  id                     String  @id @default(cuid())
+  unitId                 String  @unique
+  minSensorAgreement     Int     @default(2)
+  departureTimeoutSeconds Int    @default(5)
+  dwellMinSeconds        Int     @default(3)
+  imuVibrationThreshold  Float   @default(0.08)
+  imuEnabled             Boolean @default(true)
+  imuDurationThresholdMs Int     @default(150)
 
   unit SensorUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
 }

@@ -4,7 +4,7 @@ import { apiFetch } from '../lib/api'
 
 export type Session = {
   id: string; unitId: string; unitName: string; startedAt: string
-  endedAt: string | null; dwellSeconds: number; productPickedUp: boolean
+  endedAt: string | null; dwellSeconds: number; productInteracted: boolean
 }
 
 type SessionsResponse = {

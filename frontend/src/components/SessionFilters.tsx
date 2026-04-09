@@ -29,13 +29,13 @@ export function SessionFilters({ params, onFilter }: Props) {
         className="bg-gray-700 text-white rounded px-2 py-1 text-sm w-32"
       />
       <select
-        value={params.get('productPickedUp') ?? ''}
-        onChange={e => onFilter('productPickedUp', e.target.value || null)}
+        value={params.get('productInteracted') ?? ''}
+        onChange={e => onFilter('productInteracted', e.target.value || null)}
         className="bg-gray-700 text-white rounded px-2 py-1 text-sm"
       >
-        <option value="">Pickup: All</option>
-        <option value="true">Pickup: Yes</option>
-        <option value="false">Pickup: No</option>
+        <option value="">Interacted: All</option>
+        <option value="true">Interacted: Yes</option>
+        <option value="false">Interacted: No</option>
       </select>
     </div>
   )

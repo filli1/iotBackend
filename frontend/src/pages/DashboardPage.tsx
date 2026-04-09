@@ -42,6 +42,7 @@ export function DashboardPage() {
                     key={u.id}
                     unitId={u.id}
                     unitName={u.name}
+                    tofSensors={u.tofSensors}
                     subscribed={subscribedUnitIds.has(u.id)}
                     onSubscribeToggle={handleSubscribeToggle}
                   />

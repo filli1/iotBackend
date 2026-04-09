@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { apiFetch } from '../lib/api'
 
-type Summary = { totalSessions: number; avgDwellSeconds: number; pickupRate: number; avgDwellWithPickup: number }
+type Summary = { totalSessions: number; avgDwellSeconds: number; interactionRate: number; avgDwellWithInteraction: number }
 type DailyEntry = { date: string; sessions: number; pickups: number }
 type HeatmapEntry = { dayOfWeek: number; hour: number; sessions: number }
 type DwellEntry = { date: string; avgDwellSeconds: number }

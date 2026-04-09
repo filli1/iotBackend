@@ -9,9 +9,7 @@ const mockHealthMonitor = { process: () => {} } as unknown as HealthMonitor
 
 function buildApp(registry: UnitRegistry) {
   const app = Fastify().withTypeProvider<TypeBoxTypeProvider>()
-  const onReading = () => {}
-  const onEvent = () => {}
-  app.register(sensorRoutes, { registry, onReading, onEvent, healthMonitor: mockHealthMonitor })
+  app.register(sensorRoutes, { registry, onReading: () => {}, onEvent: () => {}, healthMonitor: mockHealthMonitor })
   return app
 }
 
@@ -23,11 +21,9 @@ describe('POST /api/sensors/data', () => {
     registry.register('unit-01')
   })
 
-  afterEach(() => {
-    registry.stop()
-  })
+  afterEach(() => { registry.stop() })
 
-  it('accepts a valid sensor reading and returns { ok: true }', async () => {
+  it('accepts a sensor reading with imu and returns { ok: true }', async () => {
     const app = buildApp(registry)
     const res = await app.inject({
       method: 'POST',
@@ -35,26 +31,15 @@ describe('POST /api/sensors/data', () => {
       payload: {
         unit_id: 'unit-01',
         ts: Date.now(),
-        tof: [
-          { id: 1, distance_mm: 800, status: 'valid' },
-          { id: 2, distance_mm: 750, status: 'valid' },
-          { id: 3, distance_mm: 4000, status: 'out_of_range' },
-          { id: 4, distance_mm: 810, status: 'valid' },
-          { id: 5, distance_mm: 4000, status: 'out_of_range' },
-          { id: 6, distance_mm: 4000, status: 'out_of_range' },
-        ],
-        imu: {
-          accel: { x: 0.02, y: 0.98, z: 0.01 },
-          gyro: { x: 0.5, y: -0.3, z: 0.1 },
-          mag: { x: 25.1, y: -12.4, z: 40.2 },
-        },
+        tof: [{ id: 1, distance_mm: 800, status: 'valid' }],
+        imu: { vibration_intensity: 0.03 },
       },
     })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body)).toEqual({ ok: true })
   })
 
-  it('accepts a valid hardware event payload', async () => {
+  it('accepts a sensor reading without imu field', async () => {
     const app = buildApp(registry)
     const res = await app.inject({
       method: 'POST',
@@ -62,12 +47,31 @@ describe('POST /api/sensors/data', () => {
       payload: {
         unit_id: 'unit-01',
         ts: Date.now(),
-        event: 'imu_pickup',
-        value: { magnitude: 2.1 },
+        tof: [{ id: 1, distance_mm: 800, status: 'valid' }],
       },
     })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body)).toEqual({ ok: true })
+  })
+
+  it('accepts an imu_vibration hardware event', async () => {
+    const app = buildApp(registry)
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sensors/data',
+      payload: { unit_id: 'unit-01', ts: Date.now(), event: 'imu_vibration', value: { intensity: 0.42 } },
+    })
+    expect(res.statusCode).toBe(200)
+  })
+
+  it('accepts an imu_shock hardware event', async () => {
+    const app = buildApp(registry)
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sensors/data',
+      payload: { unit_id: 'unit-01', ts: Date.now(), event: 'imu_shock', value: { peak_g: 1.8, axis: 'z' } },
+    })
+    expect(res.statusCode).toBe(200)
   })
 
   it('returns 404 for unknown unit_id', async () => {
@@ -75,16 +79,7 @@ describe('POST /api/sensors/data', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/sensors/data',
-      payload: {
-        unit_id: 'unit-99',
-        ts: Date.now(),
-        tof: [],
-        imu: {
-          accel: { x: 0, y: 0, z: 0 },
-          gyro: { x: 0, y: 0, z: 0 },
-          mag: { x: 0, y: 0, z: 0 },
-        },
-      },
+      payload: { unit_id: 'unit-99', ts: Date.now(), tof: [{ id: 1, distance_mm: 800, status: 'valid' }] },
     })
     expect(res.statusCode).toBe(404)
   })
@@ -94,17 +89,40 @@ describe('POST /api/sensors/data', () => {
     await app.inject({
       method: 'POST',
       url: '/api/sensors/data',
-      payload: {
-        unit_id: 'unit-01',
-        ts: Date.now(),
-        tof: [],
-        imu: {
-          accel: { x: 0, y: 0, z: 0 },
-          gyro: { x: 0, y: 0, z: 0 },
-          mag: { x: 0, y: 0, z: 0 },
-        },
-      },
+      payload: { unit_id: 'unit-01', ts: Date.now(), tof: [{ id: 1, distance_mm: 800, status: 'valid' }] },
     })
     expect(registry.getStatus('unit-01')?.online).toBe(true)
+  })
+})
+
+describe('POST /api/sensors/ping', () => {
+  let registry: UnitRegistry
+
+  beforeEach(() => {
+    registry = new UnitRegistry()
+    registry.register('unit-01')
+  })
+
+  afterEach(() => { registry.stop() })
+
+  it('returns 204 and marks unit as seen', async () => {
+    const app = buildApp(registry)
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sensors/ping',
+      payload: { unit_id: 'unit-01' },
+    })
+    expect(res.statusCode).toBe(204)
+    expect(registry.getStatus('unit-01')?.online).toBe(true)
+  })
+
+  it('returns 404 for unknown unit_id', async () => {
+    const app = buildApp(registry)
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sensors/ping',
+      payload: { unit_id: 'unit-99' },
+    })
+    expect(res.statusCode).toBe(404)
   })
 })

@@ -1,8 +1,8 @@
 type Summary = {
   totalSessions: number
   avgDwellSeconds: number
-  pickupRate: number
-  avgDwellWithPickup: number
+  interactionRate: number
+  avgDwellWithInteraction: number
 }
 
 function formatDwell(s: number) {
@@ -24,12 +24,12 @@ export function SummaryCards({ summary }: Props) {
         <p className="text-2xl font-bold">{formatDwell(summary.avgDwellSeconds)}</p>
       </div>
       <div className="bg-gray-800 rounded-lg p-4">
-        <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Pickup Rate</p>
-        <p className="text-2xl font-bold">{(summary.pickupRate * 100).toFixed(1)}%</p>
+        <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Interaction Rate</p>
+        <p className="text-2xl font-bold">{(summary.interactionRate * 100).toFixed(1)}%</p>
       </div>
       <div className="bg-gray-800 rounded-lg p-4">
-        <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Avg Dwell (Pickup)</p>
-        <p className="text-2xl font-bold">{formatDwell(summary.avgDwellWithPickup)}</p>
+        <p className="text-gray-400 text-xs uppercase tracking-wide mb-1">Avg Dwell (Interaction)</p>
+        <p className="text-2xl font-bold">{formatDwell(summary.avgDwellWithInteraction)}</p>
       </div>
     </div>
   )

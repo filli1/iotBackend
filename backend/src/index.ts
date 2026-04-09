@@ -24,6 +24,7 @@ const PUBLIC_ROUTES = new Set([
   'POST /api/auth/register',
   'GET /api/auth/setup-status',
   'POST /api/sensors/data',  // protected by API key instead
+  'POST /api/sensors/ping',  // protected by API key instead
   'GET /ws',                 // WebSocket — browsers can't send auth headers on upgrade
 ])
 
@@ -87,7 +88,7 @@ const start = async () => {
         unitId,
         ts: new Date().toISOString(),
         tof: reading.tof,
-        imu: reading.imu,
+        ...(reading.imu !== undefined && { imu: reading.imu }),
       })
       engine.process(unitId, reading)
     },

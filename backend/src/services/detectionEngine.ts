@@ -6,8 +6,8 @@ type UnitConfig = {
   minSensorAgreement: number
   dwellMinSeconds: number
   departureTimeoutSeconds: number
-  imuPickupThresholdG: number
-  imuExaminationEnabled: boolean
+  imuVibrationThreshold: number
+  imuEnabled: boolean
   imuDurationThresholdMs: number
 }
 
@@ -71,8 +71,10 @@ export class DetectionEngine {
         this.onEvent({ type: 'session_started', unitId, ts: new Date() })
       }, unit.config.dwellMinSeconds * 1000)
     } else if (unit.state === 'pending' && !detected) {
-      clearTimeout(unit.dwellTimer!)
-      unit.dwellTimer = null
+      if (unit.dwellTimer) {
+        clearTimeout(unit.dwellTimer)
+        unit.dwellTimer = null
+      }
       unit.state = 'idle'
     } else if (unit.state === 'active' && !detected) {
       unit.state = 'departing'
@@ -85,18 +87,20 @@ export class DetectionEngine {
         this.onEvent({ type: 'session_ended', unitId, ts: new Date(), dwellSeconds })
       }, unit.config.departureTimeoutSeconds * 1000)
     } else if (unit.state === 'departing' && detected) {
-      clearTimeout(unit.departureTimer!)
-      unit.departureTimer = null
+      if (unit.departureTimer) {
+        clearTimeout(unit.departureTimer)
+        unit.departureTimer = null
+      }
       unit.state = 'active'
     }
   }
 
   processEvent(unitId: string, event: HardwareEvent): void {
     const unit = this.units.get(unitId)
-    if (!unit) return
+    if (!unit || !unit.config.imuEnabled) return
 
-    if (event.event === 'imu_pickup' && unit.state === 'active') {
-      this.onEvent({ type: 'product_picked_up', unitId, ts: new Date() })
+    if (event.event === 'imu_vibration' && unit.state === 'active') {
+      this.onEvent({ type: 'product_interacted', unitId, ts: new Date() })
     }
   }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Unit } from '../hooks/useUnits'
 
-type FormData = Omit<Unit, 'name' | 'online' | 'lastSeen' | 'createdAt'>
+type FormData = Omit<Unit, 'online' | 'lastSeen' | 'createdAt' | 'tofSensors'>
 
 type Props = {
   onSubmit: (data: FormData) => Promise<void>
@@ -9,7 +9,7 @@ type Props = {
 }
 
 export function UnitRegistrationForm({ onSubmit, onCancel }: Props) {
-  const [form, setForm] = useState<FormData>({ id: '', location: '', productName: '' })
+  const [form, setForm] = useState<FormData>({ id: '', name: '', location: '', productName: '' })
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -35,6 +35,7 @@ export function UnitRegistrationForm({ onSubmit, onCancel }: Props) {
       {(
         [
           { field: 'id', label: 'Unit ID', placeholder: 'unit-01' },
+          { field: 'name', label: 'Name', placeholder: 'Display name' },
           { field: 'location', label: 'Location', placeholder: 'Aisle 3, shelf 2' },
           { field: 'productName', label: 'Product', placeholder: 'Widget X' },
         ] as { field: keyof FormData; label: string; placeholder: string }[]

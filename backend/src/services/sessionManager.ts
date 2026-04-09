@@ -7,7 +7,7 @@ type ActiveSession = {
   sessionId: string
   unitId: string
   startedAt: Date
-  productPickedUp: boolean
+  productInteracted: boolean
   alertFired: boolean
   dwellCheckTimer: ReturnType<typeof setInterval>
 }
@@ -30,11 +30,8 @@ export class SessionManager {
       case 'session_ended':
         await this.onSessionEnded(event.unitId, event.ts, event.dwellSeconds)
         break
-      case 'product_picked_up':
-        await this.onProductPickedUp(event.unitId, event.ts)
-        break
-      case 'product_put_down':
-        await this.onProductPutDown(event.unitId, event.ts)
+      case 'product_interacted':
+        await this.onProductInteracted(event.unitId, event.ts)
         break
     }
   }
@@ -48,17 +45,20 @@ export class SessionManager {
       sessionId: session.id,
       unitId,
       startedAt: ts,
-      productPickedUp: false,
+      productInteracted: false,
       alertFired: false,
-      dwellCheckTimer: setInterval(async () => {
-        const active = this.activeSessions.get(unitId)
-        if (!active || active.alertFired) return
-        const dwellSeconds = Math.round((Date.now() - active.startedAt.getTime()) / 1000)
-        await this.checkAlertRule(unitId, active, dwellSeconds)
-      }, 5_000),
+      dwellCheckTimer: setInterval(() => {}, 0), // placeholder, replaced immediately below
     }
 
     this.activeSessions.set(unitId, activeSession)
+    clearInterval(activeSession.dwellCheckTimer) // clear placeholder
+
+    activeSession.dwellCheckTimer = setInterval(async () => {
+      const active = this.activeSessions.get(unitId)
+      if (!active || active.alertFired) return
+      const dwellSeconds = Math.round((Date.now() - active.startedAt.getTime()) / 1000)
+      await this.checkAlertRule(unitId, active, dwellSeconds)
+    }, 5_000)
 
     this.broadcaster.broadcast({
       type: 'session_event',
@@ -86,7 +86,7 @@ export class SessionManager {
       unitId,
       sessionId: active.sessionId,
       dwellSeconds,
-      productPickedUp: active.productPickedUp,
+      productInteracted: active.productInteracted,
       ts: ts.toISOString(),
     })
 
@@ -95,41 +95,24 @@ export class SessionManager {
     this.activeSessions.delete(unitId)
   }
 
-  private async onProductPickedUp(unitId: string, ts: Date): Promise<void> {
+  private async onProductInteracted(unitId: string, ts: Date): Promise<void> {
     const active = this.activeSessions.get(unitId)
     if (!active) return
 
-    active.productPickedUp = true
+    active.productInteracted = true
 
     await this.prisma.presenceSession.update({
       where: { id: active.sessionId },
-      data: { productPickedUp: true },
+      data: { productInteracted: true },
     })
 
     await this.prisma.sessionEvent.create({
-      data: { sessionId: active.sessionId, type: 'product_picked_up', ts },
+      data: { sessionId: active.sessionId, type: 'product_interacted', ts },
     })
 
     this.broadcaster.broadcast({
       type: 'session_event',
-      event: 'product_picked_up',
-      unitId,
-      sessionId: active.sessionId,
-      ts: ts.toISOString(),
-    })
-  }
-
-  private async onProductPutDown(unitId: string, ts: Date): Promise<void> {
-    const active = this.activeSessions.get(unitId)
-    if (!active) return
-
-    await this.prisma.sessionEvent.create({
-      data: { sessionId: active.sessionId, type: 'product_put_down', ts },
-    })
-
-    this.broadcaster.broadcast({
-      type: 'session_event',
-      event: 'product_put_down',
+      event: 'product_interacted',
       unitId,
       sessionId: active.sessionId,
       ts: ts.toISOString(),
@@ -143,14 +126,14 @@ export class SessionManager {
     if (!rule || !rule.enabled) return
 
     const dwellMet = dwellSeconds >= rule.dwellThresholdSeconds
-    const pickupMet = !rule.requirePickup || session.productPickedUp
+    const interactionMet = !rule.requireInteraction || session.productInteracted
 
-    if (dwellMet && pickupMet) {
+    if (dwellMet && interactionMet) {
       session.alertFired = true
-      const reason = rule.requirePickup && session.productPickedUp
-        ? 'dwell_and_pickup'
-        : session.productPickedUp
-          ? 'pickup'
+      const reason = rule.requireInteraction && session.productInteracted
+        ? 'dwell_and_interaction'
+        : session.productInteracted
+          ? 'dwell_with_interaction'
           : 'dwell_threshold'
 
       this.broadcaster.broadcast({
@@ -161,7 +144,6 @@ export class SessionManager {
         ts: new Date().toISOString(),
       })
 
-      // Fire-and-forget WhatsApp notifications
       const [unit, subscriptions] = await Promise.all([
         this.prisma.sensorUnit.findUnique({ where: { id: unitId } }),
         this.prisma.unitSubscription.findMany({
@@ -175,7 +157,7 @@ export class SessionManager {
         .filter((p): p is string => p !== null)
 
       if (unit && phones.length > 0) {
-        const body = `Alert: Customer at ${unit.name} — ${dwellSeconds}s dwell${session.productPickedUp ? ', product picked up' : ''}`
+        const body = `Alert: Customer at ${unit.name} — ${dwellSeconds}s dwell${session.productInteracted ? ', product interacted with' : ''}`
         phones.forEach(phone => {
           sendWhatsApp(phone, body).catch(err => {
             console.error('WhatsApp notification failed:', err)

@@ -12,20 +12,17 @@ const PRESENCE_COLOURS: Record<string, string> = {
   active: 'bg-green-600 text-white', departing: 'bg-orange-500 text-white',
 }
 
-const DEFAULT_CONFIGS = Array.from({ length: 6 }, (_, i) => ({
-  index: i + 1,
-  label: ['left-wide', 'left', 'center-left', 'center-right', 'right', 'right-wide'][i],
-  maxDist: 1000,
-}))
+type TofSensorConfig = { index: number; label: string; maxDist: number }
 
 type Props = {
   unitId: string
   unitName: string
+  tofSensors: TofSensorConfig[]
   subscribed: boolean
   onSubscribeToggle: (unitId: string, subscribed: boolean) => void
 }
 
-export function SensorUnitCard({ unitId, unitName, subscribed, onSubscribeToggle }: Props) {
+export function SensorUnitCard({ unitId, unitName, tofSensors, subscribed, onSubscribeToggle }: Props) {
   const unit = useWsStore(s => s.units[unitId])
 
   const presenceState = unit?.presenceState ?? 'idle'
@@ -60,7 +57,7 @@ export function SensorUnitCard({ unitId, unitName, subscribed, onSubscribeToggle
         {PRESENCE_LABELS[presenceState]}
       </span>
 
-      <TofGrid readings={unit?.tof ?? []} configs={DEFAULT_CONFIGS} />
+      <TofGrid readings={unit?.tof ?? []} configs={tofSensors} />
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 flex-wrap">

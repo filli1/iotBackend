@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '../lib/api'
 
+export type TofSensorConfig = {
+  id: string; index: number; label: string; minDist: number; maxDist: number
+}
+
 export type Unit = {
   id: string
   name: string
@@ -9,6 +13,7 @@ export type Unit = {
   online: boolean
   lastSeen: string | null
   createdAt: string
+  tofSensors: TofSensorConfig[]
 }
 
 export function useUnits() {
@@ -30,7 +35,7 @@ export function useUnits() {
 
   useEffect(() => { load() }, [load])
 
-  const createUnit = async (body: Omit<Unit, 'online' | 'lastSeen' | 'createdAt'>) => {
+  const createUnit = async (body: Omit<Unit, 'online' | 'lastSeen' | 'createdAt' | 'tofSensors'>) => {
     await apiFetch('/api/units', { method: 'POST', body: JSON.stringify(body) })
     await load()
   }

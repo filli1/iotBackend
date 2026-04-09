@@ -12,7 +12,7 @@ const QuerySchema = Type.Object({
   dateFrom: Type.Optional(Type.String()),
   dateTo: Type.Optional(Type.String()),
   minDwellSeconds: Type.Optional(Type.Integer({ minimum: 0 })),
-  productPickedUp: Type.Optional(Type.Boolean()),
+  productInteracted: Type.Optional(Type.Boolean()),
 })
 
 const ExportQuerySchema = Type.Object({
@@ -20,7 +20,7 @@ const ExportQuerySchema = Type.Object({
   dateFrom: Type.Optional(Type.String()),
   dateTo: Type.Optional(Type.String()),
   minDwellSeconds: Type.Optional(Type.Integer({ minimum: 0 })),
-  productPickedUp: Type.Optional(Type.Boolean()),
+  productInteracted: Type.Optional(Type.Boolean()),
 })
 
 export function buildWhere(q: Record<string, unknown>): Prisma.PresenceSessionWhereInput {
@@ -32,7 +32,7 @@ export function buildWhere(q: Record<string, unknown>): Prisma.PresenceSessionWh
     if (q.dateTo) where.startedAt.lt = new Date(q.dateTo as string)
   }
   if (q.minDwellSeconds !== undefined) where.dwellSeconds = { gte: q.minDwellSeconds as number }
-  if (q.productPickedUp !== undefined) where.productPickedUp = q.productPickedUp as boolean
+  if (q.productInteracted !== undefined) where.productInteracted = q.productInteracted as boolean
   return where
 }
 
@@ -50,7 +50,7 @@ export const sessionRoutes: FastifyPluginAsync = async (fastify) => {
         include: { unit: { select: { name: true } } },
       })
 
-      const header = 'id,unitId,unitName,startedAt,endedAt,dwellSeconds,productPickedUp'
+      const header = 'id,unitId,unitName,startedAt,endedAt,dwellSeconds,productInteracted'
       const body = rows
         .map(r =>
           [
@@ -60,7 +60,7 @@ export const sessionRoutes: FastifyPluginAsync = async (fastify) => {
             `"${r.startedAt.toISOString()}"`,
             `"${r.endedAt?.toISOString() ?? ''}"`,
             r.dwellSeconds,
-            r.productPickedUp,
+            r.productInteracted,
           ].join(',')
         )
         .join('\n')
@@ -104,7 +104,7 @@ export const sessionRoutes: FastifyPluginAsync = async (fastify) => {
           startedAt: r.startedAt.toISOString(),
           endedAt: r.endedAt?.toISOString() ?? null,
           dwellSeconds: r.dwellSeconds,
-          productPickedUp: r.productPickedUp,
+          productInteracted: r.productInteracted,
           status: r.status,
         })),
         total,
