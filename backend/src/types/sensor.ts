@@ -4,22 +4,18 @@ export type TofReading = {
   status: 'valid' | 'out_of_range' | 'error'
 }
 
-export type ImuVector = { x: number; y: number; z: number }
-
-export type ImuState = {
-  accel: ImuVector
-  gyro: ImuVector
-  mag: ImuVector
+export type ImuReading = {
+  vibration_intensity: number
 }
 
 export type SensorReading = {
   unit_id: string
   ts: number
   tof: TofReading[]
-  imu: ImuState
+  imu?: ImuReading
 }
 
-export type HardwareEventType = 'imu_shock' | 'imu_pickup' | 'imu_rotation'
+export type HardwareEventType = 'imu_shock' | 'imu_vibration'
 
 export type HardwareEvent = {
   unit_id: string
@@ -37,5 +33,4 @@ export function isSensorReading(p: SensorPayload): p is SensorReading {
 export type DetectionEvent =
   | { type: 'session_started'; unitId: string; ts: Date }
   | { type: 'session_ended'; unitId: string; ts: Date; dwellSeconds: number }
-  | { type: 'product_picked_up'; unitId: string; ts: Date }
-  | { type: 'product_put_down'; unitId: string; ts: Date }
+  | { type: 'product_interacted'; unitId: string; ts: Date }
