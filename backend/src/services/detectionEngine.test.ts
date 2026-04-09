@@ -6,27 +6,23 @@ const defaultConfig = {
   minSensorAgreement: 2,
   dwellMinSeconds: 3,
   departureTimeoutSeconds: 5,
-  imuPickupThresholdG: 1.5,
-  imuExaminationEnabled: true,
-  imuDurationThresholdMs: 500,
+  imuVibrationThreshold: 0.08,
+  imuEnabled: true,
+  imuDurationThresholdMs: 150,
 }
 
 const makeTof = (activeCount: number) =>
-  Array.from({ length: 6 }, (_, i) => ({
+  Array.from({ length: activeCount }, (_, i) => ({
     id: i + 1,
-    distance_mm: i < activeCount ? 500 : 4000,
-    status: (i < activeCount ? 'valid' : 'out_of_range') as 'valid' | 'out_of_range' | 'error',
+    distance_mm: 500,
+    status: 'valid' as const,
   }))
 
 const makeReading = (unitId: string, activeCount: number) => ({
   unit_id: unitId,
   ts: Date.now(),
   tof: makeTof(activeCount),
-  imu: {
-    accel: { x: 0.02, y: 0.98, z: 0.01 },
-    gyro: { x: 0, y: 0, z: 0 },
-    mag: { x: 0, y: 0, z: 0 },
-  },
+  imu: { vibration_intensity: 0.01 },
 })
 
 describe('DetectionEngine', () => {
@@ -41,9 +37,6 @@ describe('DetectionEngine', () => {
       { index: 1, maxDist: 1000, minDist: 50 },
       { index: 2, maxDist: 1000, minDist: 50 },
       { index: 3, maxDist: 1000, minDist: 50 },
-      { index: 4, maxDist: 1000, minDist: 50 },
-      { index: 5, maxDist: 1000, minDist: 50 },
-      { index: 6, maxDist: 1000, minDist: 50 },
     ])
   })
 
@@ -53,7 +46,7 @@ describe('DetectionEngine', () => {
 
   it('emits session_started after dwell threshold is met', () => {
     engine.process('unit-01', makeReading('unit-01', 3))
-    expect(events).toHaveLength(0) // pending, not started yet
+    expect(events).toHaveLength(0)
 
     vi.advanceTimersByTime(3_000)
     expect(events).toHaveLength(1)
@@ -63,18 +56,17 @@ describe('DetectionEngine', () => {
   it('does NOT emit session_started if person leaves before dwell threshold', () => {
     engine.process('unit-01', makeReading('unit-01', 3))
     vi.advanceTimersByTime(1_000)
-    engine.process('unit-01', makeReading('unit-01', 0)) // person leaves
+    engine.process('unit-01', makeReading('unit-01', 0))
     vi.advanceTimersByTime(5_000)
     expect(events).toHaveLength(0)
   })
 
   it('emits session_ended with dwellSeconds after departure timeout', () => {
     engine.process('unit-01', makeReading('unit-01', 3))
-    vi.advanceTimersByTime(3_000) // session_started
-
-    vi.advanceTimersByTime(10_000) // person present for 10s
-    engine.process('unit-01', makeReading('unit-01', 0)) // person leaves
-    vi.advanceTimersByTime(5_000) // departure timeout
+    vi.advanceTimersByTime(3_000)
+    vi.advanceTimersByTime(10_000)
+    engine.process('unit-01', makeReading('unit-01', 0))
+    vi.advanceTimersByTime(5_000)
 
     const ended = events.find(e => e.type === 'session_ended')
     expect(ended).toBeDefined()
@@ -85,42 +77,56 @@ describe('DetectionEngine', () => {
 
   it('cancels departure and keeps session active if person returns', () => {
     engine.process('unit-01', makeReading('unit-01', 3))
-    vi.advanceTimersByTime(3_000) // session_started
-
-    engine.process('unit-01', makeReading('unit-01', 0)) // starts departure timer
-    vi.advanceTimersByTime(2_000) // not yet timed out
-    engine.process('unit-01', makeReading('unit-01', 3)) // person returns
-    vi.advanceTimersByTime(10_000) // wait well past departure timeout
-
+    vi.advanceTimersByTime(3_000)
+    engine.process('unit-01', makeReading('unit-01', 0))
+    vi.advanceTimersByTime(2_000)
+    engine.process('unit-01', makeReading('unit-01', 3))
+    vi.advanceTimersByTime(10_000)
     expect(events.some(e => e.type === 'session_ended')).toBe(false)
   })
 
-  it('emits product_picked_up when imu_pickup event arrives during active session', () => {
+  it('emits product_interacted when imu_vibration fires during active session', () => {
     engine.process('unit-01', makeReading('unit-01', 3))
-    vi.advanceTimersByTime(3_000) // session_started
+    vi.advanceTimersByTime(3_000)
 
     engine.processEvent('unit-01', {
       unit_id: 'unit-01',
       ts: Date.now(),
-      event: 'imu_pickup',
-      value: { magnitude: 2.1 },
+      event: 'imu_vibration',
+      value: { intensity: 0.42 },
     })
 
-    expect(events.some(e => e.type === 'product_picked_up')).toBe(true)
+    expect(events.some(e => e.type === 'product_interacted')).toBe(true)
   })
 
-  it('does NOT emit product_picked_up when session is not active', () => {
+  it('does NOT emit product_interacted when session is not active', () => {
     engine.processEvent('unit-01', {
       unit_id: 'unit-01',
       ts: Date.now(),
-      event: 'imu_pickup',
-      value: {},
+      event: 'imu_vibration',
+      value: { intensity: 0.42 },
     })
-    expect(events.some(e => e.type === 'product_picked_up')).toBe(false)
+    expect(events.some(e => e.type === 'product_interacted')).toBe(false)
+  })
+
+  it('does NOT emit product_interacted when imuEnabled is false', () => {
+    engine.updateConfig('unit-01', { ...defaultConfig, imuEnabled: false }, [
+      { index: 1, maxDist: 1000, minDist: 50 },
+    ])
+    engine.process('unit-01', makeReading('unit-01', 3))
+    vi.advanceTimersByTime(3_000)
+
+    engine.processEvent('unit-01', {
+      unit_id: 'unit-01',
+      ts: Date.now(),
+      event: 'imu_vibration',
+      value: { intensity: 0.42 },
+    })
+    expect(events.some(e => e.type === 'product_interacted')).toBe(false)
   })
 
   it('ignores readings below minSensorAgreement', () => {
-    engine.process('unit-01', makeReading('unit-01', 1)) // only 1 sensor, threshold is 2
+    engine.process('unit-01', makeReading('unit-01', 1))
     vi.advanceTimersByTime(10_000)
     expect(events).toHaveLength(0)
   })
