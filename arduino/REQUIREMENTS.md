@@ -4,7 +4,7 @@
 
 The Arduino acts as a **dumb sensor-to-WiFi bridge**. It reads from the attached sensors, serialises the data as JSON, and HTTP POSTs it to the backend. All detection logic (dwell time, engagement scoring, alert rules) runs on the backend — the Arduino has no awareness of presence sessions or business rules.
 
-**Hardware:** Arduino MKR WiFi 1010 + 6× VL53L1X ToF + 1× PIR + Grove IMU 9DOF (LSM9DS1)
+**Hardware:** Arduino MKR WiFi 1010 + 1–6× VL53L1X ToF + Grove IMU 9DOF (accelerometer used for vibration detection)
 
 ---
 
@@ -16,14 +16,15 @@ The Arduino acts as a **dumb sensor-to-WiFi bridge**. It reads from the attached
 - Reconnect automatically if the WiFi link drops during operation.
 - Use the `WiFiNINA` library.
 
-### 1.2 Backend endpoint
-- All data is sent via **HTTP POST** to `http://<backend-ip>:7000/api/sensors/data`.
+### 1.2 Backend endpoints
+- Sensor data: **HTTP POST** to `http://<backend-ip>:7000/api/sensors/data`
+- Heartbeat ping: **HTTP POST** to `http://<backend-ip>:7000/api/sensors/ping`
 - Required headers on every request:
   - `Content-Type: application/json`
   - `X-Api-Key: <key>` — the API key shown on the unit's Configure page in the dashboard. Hardcode it in the sketch as a `#define API_KEY "..."` constant.
 - The backend IP and port are hardcoded in the sketch (same local network, no DNS required).
-- On a `401` response, log "Invalid API key" to Serial and halt — the sketch cannot recover from a bad key without reflashing.
-- On any other non-2xx response, log the status code to Serial and continue — do not halt.
+- On a `401` response, log "Invalid API key" to Serial and halt.
+- On any other non-2xx response, log the status code to Serial and continue.
 
 ---
 
@@ -32,7 +33,8 @@ The Arduino acts as a **dumb sensor-to-WiFi bridge**. It reads from the attached
 ### 2.1 Timing
 - The main loop runs every **500 ms** (±50 ms jitter acceptable).
 - One full sensor reading payload is POSTed each iteration.
-- Hardware events (see §4) may be POSTed at any time outside the main loop if they occur between reading cycles.
+- Hardware events (see §4) may be POSTed at any time outside the main loop.
+- A heartbeat ping is sent to `/api/sensors/ping` every **30 seconds** as a fallback (the regular 500 ms POSTs already keep the unit online; the ping is only needed if no sensor data is flowing).
 
 ### 2.2 `unit_id`
 - Each sketch is flashed with a hardcoded `unit_id` string (e.g. `"unit-01"`).
@@ -41,7 +43,7 @@ The Arduino acts as a **dumb sensor-to-WiFi bridge**. It reads from the attached
 ### 2.3 Timestamp
 - `ts` is the number of milliseconds since the Unix epoch.
 - Use `WiFi.getTime()` (SNTP) to get wall-clock time. Multiply to ms.
-- If NTP is unavailable, use `millis()` as a fallback (backend will tolerate approximate timestamps for POC).
+- If NTP is unavailable, use `millis()` as a fallback.
 
 ---
 
@@ -54,24 +56,19 @@ Every 500 ms, POST the following JSON to `/api/sensors/data`:
   "unit_id": "unit-01",
   "ts": 1711612800000,
   "tof": [
-    { "id": 1, "distance_mm": 823,  "status": "valid"        },
-    { "id": 2, "distance_mm": 790,  "status": "valid"        },
-    { "id": 3, "distance_mm": 4000, "status": "out_of_range" },
-    { "id": 4, "distance_mm": 812,  "status": "valid"        },
-    { "id": 5, "distance_mm": 4000, "status": "out_of_range" },
-    { "id": 6, "distance_mm": 4000, "status": "out_of_range" }
+    { "id": 1, "distance_mm": 823, "status": "valid" },
+    { "id": 2, "distance_mm": 790, "status": "valid" },
+    { "id": 3, "distance_mm": 4000, "status": "out_of_range" }
   ],
-  "pir": {
-    "triggered": true,
-    "last_trigger_ms": 1500
-  },
   "imu": {
-    "accel": { "x": 0.02, "y": 0.98, "z": 0.01 },
-    "gyro":  { "x": 0.5,  "y": -0.3, "z": 0.1  },
-    "mag":   { "x": 25.1, "y": -12.4, "z": 40.2 }
+    "vibration_intensity": 0.04
   }
 }
 ```
+
+**Notes:**
+- `tof` contains only the sensors that are wired up (1–6 entries). Always include all wired sensors even if in error state.
+- `imu` is optional. Omit the field entirely if no IMU is installed or if IMU is disabled in configuration.
 
 ### 3.1 ToF sensors (`tof`)
 
@@ -83,10 +80,10 @@ Every 500 ms, POST the following JSON to `/api/sensors/data`:
 
 **Status rules:**
 - `"valid"` — sensor returned a distance within its measurement range.
-- `"out_of_range"` — sensor fired but the target is beyond its range (VL53L1X returns 4000+ mm or a range status indicating no target).
+- `"out_of_range"` — sensor fired but the target is beyond its range.
 - `"error"` — sensor did not respond on I2C or returned an unrecoverable range error.
 
-**Always include all 6 entries**, even if a sensor is in error state. Never omit an entry.
+**Always include all wired sensor entries**, even if a sensor is in error state. Never omit an entry for a sensor that is physically connected.
 
 #### 3.1.1 Physical sensor-to-index mapping
 
@@ -99,66 +96,80 @@ Index 5 — right
 Index 6 — right-wide
 ```
 
-This mapping is fixed in hardware. Label names are configurable in the backend UI but index numbers never change.
+This mapping is fixed in hardware. Not all indices need to be present — only wire up as many sensors as the installation requires.
 
 #### 3.1.2 I2C addressing
 - The VL53L1X sensors all share the same default I2C address (0x29). Each sensor's XSHUT pin must be driven individually to assign unique addresses at boot.
 - Recommended address assignment: sensors 1–6 → addresses 0x30–0x35.
 - If a sensor fails to respond during address assignment, mark all its readings as `"error"` for the rest of the session.
 
-### 3.2 PIR sensor (`pir`)
+### 3.2 IMU (`imu`)
+
+The sensor is mounted **beneath or in front of the product** (not on it). The IMU detects surface vibrations transmitted through the shelf when someone touches or picks up the product.
 
 | Field | Type | Description |
 |---|---|---|
-| `triggered` | boolean | `true` if the PIR output is currently HIGH. |
-| `last_trigger_ms` | integer | Milliseconds since the last PIR rising edge, or `0` if never triggered since boot. |
+| `vibration_intensity` | float | RMS vibration magnitude in g, computed over the 500 ms window. |
 
-### 3.3 IMU (`imu`)
+**How to compute `vibration_intensity`:**
+1. Sample the accelerometer internally at the highest available ODR ≤ 200 Hz throughout the 500 ms loop cycle.
+2. For each sample, compute the vector magnitude: `|a| = sqrt(ax² + ay² + az²)`.
+3. Subtract 1.0 g from each magnitude to remove the static gravity component (or use the hardware high-pass filter if available).
+4. Compute the RMS of these gravity-corrected magnitudes across all samples.
+5. Report this value as `vibration_intensity`.
 
-Read from the Grove IMU 9DOF (LSM9DS1) via I2C.
+At rest on a stable surface, `vibration_intensity` should be < 0.05 g RMS. A shelf tap or product lift should produce > 0.15 g RMS.
 
-| Field | Type | Unit |
-|---|---|---|
-| `accel.x/y/z` | float | g (gravitational units, ±4g range recommended) |
-| `gyro.x/y/z` | float | °/s (degrees per second, ±245 °/s range recommended) |
-| `mag.x/y/z` | float | µT (microtesla) |
-
-Report raw calibrated values — no filtering required on the Arduino side.
+**IMU is optional.** If no IMU is installed or if it fails to initialise, omit the `imu` field entirely from the payload.
 
 ---
 
 ## 4. Hardware Event Payload
 
-In addition to the periodic reading, fire a **separate HTTP POST** to the same endpoint when a discrete hardware event is detected. Use the following shape:
+In addition to the periodic reading, fire a **separate HTTP POST** to the same endpoint when a discrete hardware event is detected:
 
 ```json
 {
   "unit_id": "unit-01",
   "ts": 1711612800000,
-  "event": "imu_pickup",
-  "value": { "peak_g": 1.82 }
+  "event": "imu_vibration",
+  "value": { "intensity": 0.42 }
 }
 ```
 
-| `event` | Trigger condition | Recommended `value` fields |
+| `event` | Trigger condition | `value` fields |
 |---|---|---|
-| `"pir_trigger"` | PIR rising edge | `{}` |
-| `"imu_shock"` | Single-axis acceleration spike above threshold | `{ "peak_g": <float>, "axis": "x"\|"y"\|"z" }` |
-| `"imu_pickup"` | Sustained acceleration above threshold for > 150 ms | `{ "peak_g": <float> }` |
-| `"imu_rotation"` | Gyroscope magnitude above threshold for > 200 ms | `{ "deg_per_s": <float> }` |
+| `"imu_vibration"` | Vibration intensity above threshold, sustained > 150 ms | `{ "intensity": <float> }` |
+| `"imu_shock"` | Single-sample acceleration spike above a higher threshold | `{ "peak_g": <float>, "axis": "x"\|"y"\|"z" }` |
 
-**Detection thresholds** are baked into the sketch as `#define` constants. The backend will re-classify events based on its own configured thresholds — the Arduino's thresholds only need to be sensitive enough not to miss real events.
+**PIR sensor:** The PIR sensor (if installed) is used **on-device only** as a local trigger to wake the sketch from low-power mode or to pre-arm the ToF sensors. It is **not** reported to the backend — do not include it in any payload.
+
+**Detection thresholds** are baked into the sketch as `#define` constants.
 
 Suggested defaults:
-- `IMU_SHOCK_THRESHOLD_G` = 1.5
-- `IMU_PICKUP_THRESHOLD_G` = 1.2 (must sustain > 150 ms)
-- `IMU_ROTATION_THRESHOLD_DPS` = 30.0 (must sustain > 200 ms)
+- `IMU_VIBRATION_THRESHOLD_G` = 0.15 (sustained > 150 ms triggers `imu_vibration` event)
+- `IMU_SHOCK_THRESHOLD_G` = 1.5 (single-sample spike triggers `imu_shock` event)
 
 Events may be sent between reading cycles. Do not queue events — send immediately and resume the loop.
 
 ---
 
-## 5. Libraries
+## 5. Heartbeat Ping
+
+Every **30 seconds**, POST to `/api/sensors/ping`:
+
+```json
+{ "unit_id": "unit-01" }
+```
+
+- Same `X-Api-Key` header required.
+- Expected response: `204 No Content`.
+- On `401`: log "Invalid API key" and halt.
+- This keeps the unit marked as **Online** in the dashboard even when no ToF activity is detected (e.g. quiet store periods).
+
+---
+
+## 6. Libraries
 
 | Library | Purpose |
 |---|---|
@@ -167,21 +178,21 @@ Events may be sent between reading cycles. Do not queue events — send immediat
 | `VL53L1X` (Pololu) | ToF sensor ranging |
 | `Wire` | I2C bus |
 | `ArduinoJson` (v6+) | JSON serialisation |
-| LSM9DS1 driver (SparkFun or Arduino) | IMU readings |
+| IMU driver matching your Grove module | Accelerometer readings (check silkscreen for exact chip: LSM9DS1 or MPU-9250) |
 
 ---
 
-## 6. Serial Logging
+## 7. Serial Logging
 
 - Log to `Serial` at 115200 baud.
 - On boot: print WiFi connection status and assigned IP.
-- Each loop: print a one-line summary (e.g. `[500ms] 3/6 valid, PIR=0, accel=(0.02,0.98,0.01)`).
+- Each loop: print a one-line summary (e.g. `[500ms] 2/3 valid, vib=0.03g`).
 - On HTTP error: print the status code and response body (truncated to 128 chars).
 - On sensor error: print which sensor index failed.
 
 ---
 
-## 7. Out of Scope
+## 8. Out of Scope
 
 The following are **not** handled by the Arduino firmware:
 
@@ -191,3 +202,4 @@ The following are **not** handled by the Arduino firmware:
 - Storing readings locally (no SD card, no EEPROM persistence)
 - OTA firmware updates
 - TLS / HTTPS (plain HTTP on the local network is acceptable for POC)
+- PIR reporting to backend (PIR is on-device only)
