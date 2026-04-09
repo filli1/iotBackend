@@ -22,5 +22,6 @@ jobs:
             npm run build -w frontend
             cd backend
             npx prisma migrate deploy
+            npx prisma generate
             cd ..
-            pm2 restart store-attention
+            pm2 startOrRestart pm2.config.cjs --only store-attention
