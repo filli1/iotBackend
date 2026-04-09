@@ -19,8 +19,8 @@ beforeAll(async () => {
   const now = new Date()
   await prisma.presenceSession.createMany({
     data: [
-      { unitId: UNIT_ID, startedAt: new Date(now.getTime() - 60000), endedAt: now, dwellSeconds: 45, productPickedUp: true, status: 'completed' },
-      { unitId: UNIT_ID, startedAt: new Date(now.getTime() - 30000), endedAt: now, dwellSeconds: 10, productPickedUp: false, status: 'completed' },
+      { unitId: UNIT_ID, startedAt: new Date(now.getTime() - 60000), endedAt: now, dwellSeconds: 45, productInteracted: true, status: 'completed' },
+      { unitId: UNIT_ID, startedAt: new Date(now.getTime() - 30000), endedAt: now, dwellSeconds: 10, productInteracted: false, status: 'completed' },
       { unitId: UNIT_ID, startedAt: now, status: 'active' },
     ],
   })
@@ -39,11 +39,11 @@ describe('GET /api/sessions', () => {
     expect(body.data.every((s: { status: string }) => s.status === 'completed')).toBe(true)
   })
 
-  it('filters by productPickedUp', async () => {
+  it('filters by productInteracted', async () => {
     const app = await buildApp()
-    const res = await app.inject({ method: 'GET', url: '/api/sessions?productPickedUp=true' })
+    const res = await app.inject({ method: 'GET', url: '/api/sessions?productInteracted=true' })
     const body = JSON.parse(res.body)
-    expect(body.data.every((s: { productPickedUp: boolean }) => s.productPickedUp === true)).toBe(true)
+    expect(body.data.every((s: { productInteracted: boolean }) => s.productInteracted === true)).toBe(true)
   })
 
   it('filters by minDwellSeconds', async () => {
@@ -69,7 +69,7 @@ describe('GET /api/sessions', () => {
     expect(res.headers['content-type']).toContain('text/csv')
     expect(res.headers['content-disposition']).toContain('attachment')
     const lines = res.body.split('\n')
-    expect(lines[0]).toBe('id,unitId,unitName,startedAt,endedAt,dwellSeconds,productPickedUp')
+    expect(lines[0]).toBe('id,unitId,unitName,startedAt,endedAt,dwellSeconds,productInteracted')
   })
 
   it('GET /api/sessions/export.csv returns data rows for matching sessions', async () => {
@@ -84,6 +84,6 @@ describe('GET /api/sessions', () => {
     const app = await buildApp()
     const res = await app.inject({ method: 'GET', url: '/api/sessions/export.csv?unitId=no-such-unit' })
     expect(res.statusCode).toBe(200)
-    expect(res.body.trim()).toBe('id,unitId,unitName,startedAt,endedAt,dwellSeconds,productPickedUp')
+    expect(res.body.trim()).toBe('id,unitId,unitName,startedAt,endedAt,dwellSeconds,productInteracted')
   })
 })
