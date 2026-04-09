@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../lib/authStore'
 
-const BASE = 'http://localhost:7000'
+const BASE = ''
 
 type AuthUser = { id: string; email: string; phoneNumber: string | null }
 

@@ -19,7 +19,7 @@ export function HistoryPage() {
 
   const handleExport = () => {
     const p = new URLSearchParams(params)
-    window.open(`http://localhost:7000/api/sessions/export.csv?${p.toString()}`, '_blank')
+    window.open(`/api/sessions/export.csv?${p.toString()}`, '_blank')
   }
 
   return (

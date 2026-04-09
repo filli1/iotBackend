@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useWsStore } from '../lib/wsStore'
 
-const WS_URL = 'ws://localhost:7000/ws'
+const WS_URL = `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws`
 
 export function useWebSocket() {
   const { setConnected, handleMessage } = useWsStore()

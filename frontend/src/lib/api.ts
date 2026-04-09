@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:7000'
+const BASE = ''
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const stored = localStorage.getItem('auth')
