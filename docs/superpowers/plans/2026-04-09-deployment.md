@@ -341,10 +341,30 @@ In your GitHub repo: **Settings → Secrets and variables → Actions → New re
 | `DROPLET_IP` | The droplet's public IP address |
 | `DEPLOY_SSH_PRIVATE_KEY` | Contents of `~/.ssh/deploy_key` (the private key file — copy with `cat ~/.ssh/deploy_key`) |
 
-**Step 7: Clone the repo on the droplet**
+**Step 6b: Create a GitHub Deploy Key so the droplet can `git pull`**
+
+The deploy script runs `git pull origin main` on the droplet, so the droplet needs read access to the repo. Do this on your **local machine** (not the droplet):
 
 ```bash
-sudo -u deploy git clone https://github.com/<org>/<repo>.git /home/deploy/store-attention
+ssh-keygen -t ed25519 -C "droplet-deploy-key" -f ~/.ssh/droplet_deploy_key -N ""
+```
+
+Add the public key to GitHub: **repo → Settings → Deploy keys → Add deploy key**
+- Title: `DigitalOcean Droplet`
+- Key: paste contents of `~/.ssh/droplet_deploy_key.pub`
+- Allow write access: No
+
+Install the private key on the droplet (as root):
+
+```bash
+sudo -u deploy mkdir -p /home/deploy/.ssh
+cat ~/.ssh/droplet_deploy_key | ssh root@<droplet-ip> "sudo tee /home/deploy/.ssh/id_ed25519 > /dev/null && sudo chmod 600 /home/deploy/.ssh/id_ed25519 && sudo chown deploy:deploy /home/deploy/.ssh/id_ed25519"
+```
+
+**Step 7: Clone the repo on the droplet (using SSH)**
+
+```bash
+sudo -u deploy git clone git@github.com:<org>/<repo>.git /home/deploy/store-attention
 ```
 
 **Step 8: Create the .env file on the droplet**
