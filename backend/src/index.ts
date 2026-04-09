@@ -32,7 +32,7 @@ const registry = new UnitRegistry()
 const start = async () => {
   const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>()
 
-  await fastify.register(cors, { origin: 'http://localhost:5174' })
+  await fastify.register(cors, { origin: process.env.CORS_ORIGIN ?? 'http://localhost:5174' })
   await fastify.register(jwt, { secret: JWT_SECRET })
 
   // Protect all routes except public ones
