@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export type TofReading = { id: number; distance_mm: number; status: 'valid' | 'out_of_range' | 'error' }
-export type ImuState = { accel: { x: number; y: number; z: number }; gyro: { x: number; y: number; z: number }; mag: { x: number; y: number; z: number } }
+export type ImuReading = { vibration_intensity: number }
 
 export type PresenceState = 'idle' | 'pending' | 'active' | 'departing'
 
@@ -11,7 +11,7 @@ export type UnitLiveState = {
   lastSeen: string | null
   presenceState: PresenceState
   tof: TofReading[]
-  imu: ImuState | null
+  imu: ImuReading | null
   lastEvent: { event: string; ts: string } | null
 }
 
@@ -21,7 +21,7 @@ export type EventFeedEntry = {
   event: string
   ts: string
   dwellSeconds?: number
-  productPickedUp?: boolean
+  productInteracted?: boolean
 }
 
 export type ActiveAlert = {
@@ -71,7 +71,7 @@ export const useWsStore = create<WsStore>((set) => ({
             lastSeen: msg.ts as string,
             presenceState: (msg.presenceState as PresenceState) ?? state.units[unitId]?.presenceState ?? 'idle',
             tof: msg.tof as TofReading[],
-            imu: msg.imu as ImuState,
+            imu: (msg.imu as ImuReading) ?? null,
             lastEvent: state.units[unitId]?.lastEvent ?? null,
           },
         },
@@ -83,7 +83,7 @@ export const useWsStore = create<WsStore>((set) => ({
         event: msg.event as string,
         ts: msg.ts as string,
         dwellSeconds: msg.dwellSeconds as number | undefined,
-        productPickedUp: msg.productPickedUp as boolean | undefined,
+        productInteracted: msg.productInteracted as boolean | undefined,
       }
       set(state => ({
         units: {

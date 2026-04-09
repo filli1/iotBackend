@@ -7,10 +7,10 @@ export type TofSensorConfig = {
 export type UnitConfig = {
   id: string; minSensorAgreement: number; departureTimeoutSeconds: number
   dwellMinSeconds: number;
-  imuPickupThresholdG: number; imuExaminationEnabled: boolean; imuDurationThresholdMs: number
+  imuVibrationThreshold: number; imuEnabled: boolean; imuDurationThresholdMs: number
 }
 export type AlertRuleConfig = {
-  id: string; dwellThresholdSeconds: number; requirePickup: boolean; enabled: boolean
+  id: string; dwellThresholdSeconds: number; requireInteraction: boolean; enabled: boolean
 }
 
 export type FullConfig = { configuration: UnitConfig; sensors: TofSensorConfig[]; alertRule: AlertRuleConfig }
@@ -51,5 +51,5 @@ export function useUnitConfig(unitId: string) {
     }
   }
 
-  return { config, loading, error, saving, saved, save }
+  return { config, loading, error, saving, saved, save, reload: load }
 }
