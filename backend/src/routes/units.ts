@@ -34,12 +34,8 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
         data: {
           id, name: productName, location, productName,
           apiKey: generateApiKey(),
-          configuration: {
-            create: {},
-          },
-          alertRule: {
-            create: {},
-          },
+          configuration: { create: {} },
+          alertRule: { create: {} },
           tofSensors: {
             create: DEFAULT_TOF_LABELS.map((label, i) => ({
               index: i + 1,
@@ -57,7 +53,10 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
   )
 
   fastify.get('/api/units', async () => {
-    const units = await prisma.sensorUnit.findMany({ orderBy: { createdAt: 'asc' } })
+    const units = await prisma.sensorUnit.findMany({
+      orderBy: { createdAt: 'asc' },
+      include: { tofSensors: { orderBy: { index: 'asc' } } },
+    })
     return {
       units: units.map(u => {
         const status = opts.registry.getStatus(u.id)
@@ -121,6 +120,70 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     return { sensors }
   })
 
+  const AddSensorBody = Type.Object({
+    label: Type.String({ minLength: 1 }),
+    minDist: Type.Optional(Type.Number({ minimum: 10, maximum: 500 })),
+    maxDist: Type.Optional(Type.Number({ minimum: 100, maximum: 4000 })),
+  })
+
+  fastify.post(
+    '/api/units/:unitId/sensors',
+    { schema: { body: AddSensorBody } },
+    async (request, reply) => {
+      const { unitId } = request.params as { unitId: string }
+      const body = request.body as Static<typeof AddSensorBody>
+
+      const existing = await prisma.tofSensor.findMany({ where: { unitId }, orderBy: { index: 'asc' } })
+      if (existing.length >= 6) {
+        return reply.status(400).send({ error: 'Maximum 6 sensors per unit' })
+      }
+
+      const nextIndex = existing.length > 0 ? Math.max(...existing.map(s => s.index)) + 1 : 1
+      const sensor = await prisma.tofSensor.create({
+        data: {
+          unitId,
+          index: nextIndex,
+          label: body.label,
+          minDist: body.minDist ?? 50,
+          maxDist: body.maxDist ?? 1000,
+        },
+      })
+
+      const [cfg, sensors] = await Promise.all([
+        prisma.unitConfiguration.findUnique({ where: { unitId } }),
+        prisma.tofSensor.findMany({ where: { unitId } }),
+      ])
+      if (cfg) opts.engine.updateConfig(unitId, cfg, sensors)
+
+      return reply.status(201).send(sensor)
+    }
+  )
+
+  fastify.delete('/api/units/:unitId/sensors/:index', async (request, reply) => {
+    const { unitId, index } = request.params as { unitId: string; index: string }
+    const sensorIndex = parseInt(index, 10)
+
+    const existing = await prisma.tofSensor.findMany({ where: { unitId } })
+    if (existing.length <= 1) {
+      return reply.status(400).send({ error: 'Unit must have at least 1 sensor' })
+    }
+
+    const target = existing.find(s => s.index === sensorIndex)
+    if (!target) {
+      return reply.status(404).send({ error: 'Sensor not found' })
+    }
+
+    await prisma.tofSensor.deleteMany({ where: { unitId, index: sensorIndex } })
+
+    const [cfg, sensors] = await Promise.all([
+      prisma.unitConfiguration.findUnique({ where: { unitId } }),
+      prisma.tofSensor.findMany({ where: { unitId } }),
+    ])
+    if (cfg) opts.engine.updateConfig(unitId, cfg, sensors)
+
+    return reply.send({ ok: true })
+  })
+
   fastify.get('/api/units/:unitId/api-key', async (request, reply) => {
     const { unitId } = request.params as { unitId: string }
     const unit = await prisma.sensorUnit.findUnique({ where: { id: unitId }, select: { apiKey: true } })
@@ -133,8 +196,8 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
       minSensorAgreement: Type.Number({ minimum: 1, maximum: 6 }),
       departureTimeoutSeconds: Type.Number({ minimum: 1, maximum: 30 }),
       dwellMinSeconds: Type.Number({ minimum: 1, maximum: 30 }),
-      imuPickupThresholdG: Type.Number({ minimum: 0.5, maximum: 5 }),
-      imuExaminationEnabled: Type.Boolean(),
+      imuVibrationThreshold: Type.Number({ minimum: 0, maximum: 5 }),
+      imuEnabled: Type.Boolean(),
       imuDurationThresholdMs: Type.Number({ minimum: 100, maximum: 2000 }),
     }))),
     sensors: Type.Optional(Type.Array(Type.Object({
@@ -145,7 +208,7 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
     }))),
     alertRule: Type.Optional(Type.Partial(Type.Object({
       dwellThresholdSeconds: Type.Number({ minimum: 1 }),
-      requirePickup: Type.Boolean(),
+      requireInteraction: Type.Boolean(),
       enabled: Type.Boolean(),
     }))),
   })
@@ -178,7 +241,6 @@ export const unitRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, opt
         }
       })
 
-      // Apply to running engine immediately
       const [cfg, sensors] = await Promise.all([
         prisma.unitConfiguration.findUnique({ where: { unitId } }),
         prisma.tofSensor.findMany({ where: { unitId } }),

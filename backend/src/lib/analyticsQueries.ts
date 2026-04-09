@@ -15,14 +15,14 @@ export async function getSummary(p: WhereParams) {
   const rows = await prisma.$queryRawUnsafe<{
     totalSessions: bigint
     avgDwellSeconds: number | null
-    pickupCount: bigint
-    avgDwellWithPickup: number | null
+    interactionCount: bigint
+    avgDwellWithInteraction: number | null
   }[]>(`
     SELECT
       COUNT(*) as "totalSessions",
       AVG("dwellSeconds") as "avgDwellSeconds",
-      SUM(CASE WHEN "productPickedUp" = 1 THEN 1 ELSE 0 END) as "pickupCount",
-      AVG(CASE WHEN "productPickedUp" = 1 THEN "dwellSeconds" END) as "avgDwellWithPickup"
+      SUM(CASE WHEN "productInteracted" = 1 THEN 1 ELSE 0 END) as "interactionCount",
+      AVG(CASE WHEN "productInteracted" = 1 THEN "dwellSeconds" END) as "avgDwellWithInteraction"
     FROM "PresenceSession" s
     WHERE ${where}
   `)
@@ -31,24 +31,24 @@ export async function getSummary(p: WhereParams) {
   return {
     totalSessions: total,
     avgDwellSeconds: r.avgDwellSeconds ? Math.round(r.avgDwellSeconds) : 0,
-    pickupRate: total > 0 ? Number(r.pickupCount) / total : 0,
-    avgDwellWithPickup: r.avgDwellWithPickup ? Math.round(r.avgDwellWithPickup) : 0,
+    interactionRate: total > 0 ? Number(r.interactionCount) / total : 0,
+    avgDwellWithInteraction: r.avgDwellWithInteraction ? Math.round(r.avgDwellWithInteraction) : 0,
   }
 }
 
 export async function getDailyStats(p: WhereParams) {
   const where = dateCondition('s', p)
-  const rows = await prisma.$queryRawUnsafe<{ date: string; sessions: bigint; pickups: bigint }[]>(`
+  const rows = await prisma.$queryRawUnsafe<{ date: string; sessions: bigint; interactions: bigint }[]>(`
     SELECT
       date("startedAt") as date,
       COUNT(*) as sessions,
-      SUM(CASE WHEN "productPickedUp" = 1 THEN 1 ELSE 0 END) as pickups
+      SUM(CASE WHEN "productInteracted" = 1 THEN 1 ELSE 0 END) as interactions
     FROM "PresenceSession" s
     WHERE ${where}
     GROUP BY date("startedAt")
     ORDER BY date("startedAt") ASC
   `)
-  return rows.map(r => ({ date: r.date, sessions: Number(r.sessions), pickups: Number(r.pickups) }))
+  return rows.map(r => ({ date: r.date, sessions: Number(r.sessions), interactions: Number(r.interactions) }))
 }
 
 export async function getHeatmap(p: WhereParams) {
