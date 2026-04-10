@@ -14,8 +14,8 @@ const SensorReadingSchema = Type.Object({
     status: Type.Union([Type.Literal('valid'), Type.Literal('out_of_range'), Type.Literal('error')]),
   }), { minItems: 1 }),
   imu: Type.Optional(Type.Object({
-    vibration_intensity: Type.Number({ minimum: 0 }),
-  })),
+    vibration_intensity: Type.Optional(Type.Number({ minimum: 0 })),
+  }, { additionalProperties: true })),
 })
 
 const HardwareEventSchema = Type.Object({

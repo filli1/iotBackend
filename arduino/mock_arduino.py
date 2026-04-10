@@ -1,7 +1,7 @@
 """
 Mock Arduino — Store Attention sensor simulator
 Emulates realistic customer interactions to drive the full detection pipeline:
-  idle → pir_trigger → ToF in-range → session_started → (optional pickup) → session_ended
+  idle → ToF in-range → session_started → (optional pickup) → session_ended
 
 Usage:
     python mock_arduino.py                     # run default unit in a loop
@@ -48,37 +48,15 @@ def get_ts() -> int:
 
 
 def build_imu(mode: str = "still") -> dict:
-    """Return realistic IMU readings for different physical states."""
+    """Return vibration_intensity for different physical states."""
     if mode == "still":
-        return {
-            "accel": {"x": round(random.uniform(-0.02, 0.02), 3),
-                      "y": round(random.uniform(0.96, 1.00), 3),
-                      "z": round(random.uniform(-0.02, 0.02), 3)},
-            "gyro":  {"x": 0, "y": 0, "z": 0},
-            "mag":   {"x": 25, "y": -12, "z": 40},
-        }
+        return {"vibration_intensity": round(random.uniform(0.0, 0.05), 3)}
     if mode == "examining":
         # Slow tilt — someone rotating the product to look at the back
-        return {
-            "accel": {"x": round(random.uniform(-0.3, 0.3), 3),
-                      "y": round(random.uniform(0.7, 0.95), 3),
-                      "z": round(random.uniform(-0.2, 0.2), 3)},
-            "gyro":  {"x": round(random.uniform(-0.5, 0.5), 3),
-                      "y": round(random.uniform(-0.5, 0.5), 3),
-                      "z": round(random.uniform(-0.2, 0.2), 3)},
-            "mag":   {"x": 25, "y": -12, "z": 40},
-        }
+        return {"vibration_intensity": round(random.uniform(0.1, 0.4), 3)}
     if mode == "pickup":
-        # Sharp vertical acceleration spike
-        return {
-            "accel": {"x": round(random.uniform(-0.5, 0.5), 3),
-                      "y": round(random.uniform(1.5, 2.5), 3),
-                      "z": round(random.uniform(-0.3, 0.3), 3)},
-            "gyro":  {"x": round(random.uniform(-2, 2), 3),
-                      "y": round(random.uniform(-2, 2), 3),
-                      "z": round(random.uniform(-1, 1), 3)},
-            "mag":   {"x": 25, "y": -12, "z": 40},
-        }
+        # Sharp movement spike
+        return {"vibration_intensity": round(random.uniform(0.8, 2.5), 3)}
     return build_imu("still")
 
 
@@ -121,12 +99,11 @@ def post(unit_id: str, api_key: str, payload: dict) -> bool:
 
 
 def send_reading(unit_id: str, api_key: str, dist: int, num_in_range: int,
-                 is_pir: bool, imu_mode: str = "still") -> bool:
+                 imu_mode: str = "still") -> bool:
     return post(unit_id, api_key, {
         "unit_id": unit_id,
         "ts": get_ts(),
         "tof": make_tof_reading(num_in_range, dist),
-        "pir": {"triggered": is_pir, "last_trigger_ms": 10 if is_pir else 5000},
         "imu": build_imu(imu_mode),
     })
 
@@ -155,16 +132,14 @@ def scenario_pass_by(unit_id: str, api_key: str):
     dist = random.randint(500, 750)
     print(f"  Scenario: PASS-BY  ({dwell:.1f}s, dist~{dist}mm)")
 
-    send_event(unit_id, api_key, "pir_trigger")
     deadline = time.time() + dwell
     while time.time() < deadline:
-        send_reading(unit_id, api_key, dist, num_in_range=random.randint(2, 4),
-                     is_pir=True)
+        send_reading(unit_id, api_key, dist, num_in_range=random.randint(2, 4))
         time.sleep(LOOP_INTERVAL_S)
 
     # Walk away — send out-of-range readings so the engine resets to idle
     for _ in range(3):
-        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0, is_pir=False)
+        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0)
         time.sleep(LOOP_INTERVAL_S)
 
 
@@ -177,92 +152,83 @@ def scenario_browse(unit_id: str, api_key: str):
     dist = random.randint(420, 650)
     print(f"  Scenario: BROWSE   ({dwell}s, dist~{dist}mm)")
 
-    send_event(unit_id, api_key, "pir_trigger")
     deadline = time.time() + dwell
     while time.time() < deadline:
-        send_reading(unit_id, api_key, dist, num_in_range=random.randint(3, 6),
-                     is_pir=True)
+        send_reading(unit_id, api_key, dist, num_in_range=random.randint(3, 6))
         time.sleep(LOOP_INTERVAL_S)
 
     # Departure — a few frames with nothing detected
     for _ in range(4):
-        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0, is_pir=False)
+        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0)
         time.sleep(LOOP_INTERVAL_S)
 
 
 def scenario_pickup(unit_id: str, api_key: str):
     """
-    Customer picks up product: triggers session_started + product_picked_up.
-    May also examine (imu_rotation) before putting it back.
+    Customer picks up product: triggers session_started + product_interacted (via imu_vibration).
+    May also examine before putting it back.
     """
     approach_time = random.randint(4, 8)      # time before pickup
     examine_time = random.randint(8, 20)       # time holding product
     dist = random.randint(300, 500)
     print(f"  Scenario: PICKUP   (approach {approach_time}s, examine {examine_time}s, dist~{dist}mm)")
 
-    send_event(unit_id, api_key, "pir_trigger")
-
     # Approach phase
     deadline = time.time() + approach_time
     while time.time() < deadline:
-        send_reading(unit_id, api_key, dist, num_in_range=random.randint(3, 6),
-                     is_pir=True)
+        send_reading(unit_id, api_key, dist, num_in_range=random.randint(3, 6))
         time.sleep(LOOP_INTERVAL_S)
 
-    # Pickup event
-    peak_g = round(random.uniform(1.3, 2.1), 2)
-    send_event(unit_id, api_key, "imu_pickup", {"peak_g": peak_g})
-    send_reading(unit_id, api_key, dist, num_in_range=5, is_pir=True, imu_mode="pickup")
+    # Pickup — vibration event signals product interaction
+    send_event(unit_id, api_key, "imu_vibration", {"peak_intensity": round(random.uniform(1.3, 2.1), 2)})
+    send_reading(unit_id, api_key, dist, num_in_range=5, imu_mode="pickup")
     time.sleep(LOOP_INTERVAL_S)
 
-    # Examine phase — occasional rotation events
+    # Examine phase — occasional vibration bursts
     deadline = time.time() + examine_time
-    rotation_cooldown = 0.0
+    vibration_cooldown = 0.0
     while time.time() < deadline:
         imu_mode = "still"
-        if time.time() > rotation_cooldown and random.random() > 0.85:
-            send_event(unit_id, api_key, "imu_rotation",
-                       {"degrees": round(random.uniform(45, 180), 1)})
+        if time.time() > vibration_cooldown and random.random() > 0.85:
+            send_event(unit_id, api_key, "imu_vibration",
+                       {"peak_intensity": round(random.uniform(0.3, 0.8), 2)})
             imu_mode = "examining"
-            rotation_cooldown = time.time() + 2.5
+            vibration_cooldown = time.time() + 2.5
         send_reading(unit_id, api_key, dist, num_in_range=random.randint(3, 5),
-                     is_pir=True, imu_mode=imu_mode)
+                     imu_mode=imu_mode)
         time.sleep(LOOP_INTERVAL_S)
 
     # Departure
     for _ in range(4):
-        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0, is_pir=False)
+        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0)
         time.sleep(LOOP_INTERVAL_S)
 
 
 def scenario_alert(unit_id: str, api_key: str):
     """
-    Long dwell + pickup — designed to reliably fire an alert rule
+    Long dwell + vibration — designed to reliably fire an alert rule
     (assumes rule is: dwell >= 30s AND pickup required, or just dwell >= 30s).
     """
     dwell = random.randint(35, 60)
     dist = random.randint(350, 550)
     print(f"  Scenario: ALERT    ({dwell}s, dist~{dist}mm) — designed to trigger alert rule")
 
-    send_event(unit_id, api_key, "pir_trigger")
-
-    pickup_sent = False
+    vibration_sent = False
     start = time.time()
     while (time.time() - start) < dwell:
         elapsed = time.time() - start
 
-        # Send pickup after ~5 s of presence (session will be active by then)
-        if not pickup_sent and elapsed > 5:
-            peak_g = round(random.uniform(1.4, 2.0), 2)
-            send_event(unit_id, api_key, "imu_pickup", {"peak_g": peak_g})
-            pickup_sent = True
+        # Send vibration event after ~5 s of presence (session will be active by then)
+        if not vibration_sent and elapsed > 5:
+            send_event(unit_id, api_key, "imu_vibration",
+                       {"peak_intensity": round(random.uniform(1.4, 2.0), 2)})
+            vibration_sent = True
 
-        send_reading(unit_id, api_key, dist, num_in_range=random.randint(4, 6),
-                     is_pir=True)
+        send_reading(unit_id, api_key, dist, num_in_range=random.randint(4, 6))
         time.sleep(LOOP_INTERVAL_S)
 
     for _ in range(4):
-        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0, is_pir=False)
+        send_reading(unit_id, api_key, NO_PRESENCE_DIST, num_in_range=0)
         time.sleep(LOOP_INTERVAL_S)
 
 # ---------------------------------------------------------------------------

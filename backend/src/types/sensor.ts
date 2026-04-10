@@ -5,7 +5,8 @@ export type TofReading = {
 }
 
 export type ImuReading = {
-  vibration_intensity: number
+  vibration_intensity?: number
+  [key: string]: unknown
 }
 
 export type SensorReading = {
