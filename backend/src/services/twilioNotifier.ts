@@ -8,8 +8,7 @@ export async function sendWhatsApp(to: string, body: string): Promise<void> {
   const fromNumber = process.env.TWILIO_FROM_NUMBER
 
   if (!accountSid || !fromNumber) {
-    console.warn('WhatsApp notification skipped: Twilio credentials not configured')
-    return
+    throw new Error('Twilio credentials not configured')
   }
 
   let client: ReturnType<typeof twilio>
@@ -18,8 +17,7 @@ export async function sendWhatsApp(to: string, body: string): Promise<void> {
   } else if (apiKeySid && apiKeySecret) {
     client = twilio(apiKeySid, apiKeySecret, { accountSid })
   } else {
-    console.warn('WhatsApp notification skipped: Twilio credentials not configured')
-    return
+    throw new Error('Twilio credentials not configured')
   }
 
   await client.messages.create({

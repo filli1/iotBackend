@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWsStore } from '../lib/wsStore'
 import { TofGrid } from './TofGrid'
@@ -24,6 +25,15 @@ type Props = {
 
 export function SensorUnitCard({ unitId, unitName, tofSensors, subscribed, onSubscribeToggle }: Props) {
   const unit = useWsStore(s => s.units[unitId])
+  const [showOptInHint, setShowOptInHint] = useState(false)
+
+  const handleBellClick = () => {
+    if (!subscribed) {
+      setShowOptInHint(true)
+      setTimeout(() => setShowOptInHint(false), 8000)
+    }
+    onSubscribeToggle(unitId, subscribed)
+  }
 
   const presenceState = unit?.presenceState ?? 'idle'
   const online = unit?.status === 'online'
@@ -38,7 +48,7 @@ export function SensorUnitCard({ unitId, unitName, tofSensors, subscribed, onSub
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => onSubscribeToggle(unitId, subscribed)}
+            onClick={handleBellClick}
             title={subscribed ? 'Unsubscribe from alerts' : 'Subscribe to alerts'}
             className="text-lg leading-none"
           >
@@ -50,6 +60,12 @@ export function SensorUnitCard({ unitId, unitName, tofSensors, subscribed, onSub
           </span>
         </div>
       </div>
+
+      {showOptInHint && (
+        <div className="bg-yellow-900/40 border border-yellow-700/60 rounded p-2 text-xs text-yellow-200">
+          To receive WhatsApp alerts, send <strong>join fast-stone</strong> to <strong>+1 415 523 8886</strong> on WhatsApp.
+        </div>
+      )}
 
       <HealthWarningBar unitId={unitId} />
 

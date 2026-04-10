@@ -18,8 +18,8 @@ export function TofSensorRow({ label, distanceMm, valid, maxDist }: Props) {
     <div className="flex items-center gap-4 py-3 border-b border-gray-800">
       <div className="w-32 text-sm font-mono text-gray-300 uppercase tracking-wide">{label}</div>
       <div className="w-24 text-right text-xl font-bold tabular-nums">
-        {valid && distanceMm !== null ? `${distanceMm}` : '—'}
-        {valid && distanceMm !== null && <span className="text-sm font-normal text-gray-400 ml-1">mm</span>}
+        {valid && distanceMm !== null ? `${(distanceMm / 10).toFixed(1)}` : '—'}
+        {valid && distanceMm !== null && <span className="text-sm font-normal text-gray-400 ml-1">cm</span>}
       </div>
       <div className="flex-1 bg-gray-700 rounded-full h-3">
         <div

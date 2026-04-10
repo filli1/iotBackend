@@ -18,7 +18,7 @@ export function TofGrid({ readings, configs }: Props) {
           <div key={cfg.index} className={`rounded p-2 text-center ${bg}`}>
             <div className="text-xs truncate">{cfg.label}</div>
             <div className="text-sm font-mono mt-1">
-              {reading?.status === 'valid' ? `${reading.distance_mm}mm` : '—'}
+              {reading?.status === 'valid' ? `${(reading.distance_mm / 10).toFixed(1)}cm` : '—'}
             </div>
           </div>
         )

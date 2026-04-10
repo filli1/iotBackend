@@ -158,8 +158,8 @@ export function ConfigurePage() {
               <tr className="text-gray-400 text-left">
                 <th className="pb-2">Index</th>
                 <th className="pb-2">Label<Tooltip text="A human-readable name for this sensor, shown in calibration view." /></th>
-                <th className="pb-2">Min (mm)<Tooltip text="Minimum distance a reading must be to count as a detection." /></th>
-                <th className="pb-2">Max (mm)<Tooltip text="Maximum distance a reading counts as a detection." /></th>
+                <th className="pb-2">Min (cm)<Tooltip text="Minimum distance a reading must be to count as a detection." /></th>
+                <th className="pb-2">Max (cm)<Tooltip text="Maximum distance a reading counts as a detection." /></th>
                 <th className="pb-2"></th>
               </tr>
             </thead>
@@ -168,8 +168,8 @@ export function ConfigurePage() {
                 <tr key={s.index} className="border-t border-gray-800">
                   <td className="py-2 pr-4 text-gray-400">{s.index}</td>
                   <td className="py-2 pr-4"><input value={s.label} onChange={e => setSensor(s.index, 'label', e.target.value)} className="bg-gray-700 text-white rounded px-2 py-1 text-sm w-36" /></td>
-                  <td className="py-2 pr-4">{numInput(s.minDist, v => setSensor(s.index, 'minDist', v), 10, 500)}</td>
-                  <td className="py-2">{numInput(s.maxDist, v => setSensor(s.index, 'maxDist', v), 100, 4000)}</td>
+                  <td className="py-2 pr-4">{numInput(Math.round(s.minDist / 10), v => setSensor(s.index, 'minDist', v * 10), 1, 50)}</td>
+                  <td className="py-2">{numInput(Math.round(s.maxDist / 10), v => setSensor(s.index, 'maxDist', v * 10), 10, 400)}</td>
                   <td className="py-2 pl-2">
                     <button
                       type="button"
@@ -254,6 +254,11 @@ export function ConfigurePage() {
             Users subscribed here receive a WhatsApp alert when this unit's alert rule fires.
             A valid phone number must be set on the user account.
           </p>
+          <div className="bg-yellow-900/40 border border-yellow-700/60 rounded p-3 mb-4 text-sm text-yellow-200">
+            <strong>WhatsApp opt-in required:</strong> Before a user can receive alerts, they must send the message{' '}
+            <code className="bg-yellow-900 px-1 rounded font-mono">join fast-stone</code> to{' '}
+            <strong>+1 415 523 8886</strong> on WhatsApp.
+          </div>
           {subscribers.length === 0 ? (
             <p className="text-gray-500 text-sm">No subscribers yet.</p>
           ) : (

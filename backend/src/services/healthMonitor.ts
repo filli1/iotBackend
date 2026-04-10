@@ -53,7 +53,7 @@ export class HealthMonitor {
             unitId,
             condition: 'stuck_sensor',
             sensorIndex: tof.id,
-            message: `Sensor ${tof.id} may be stuck at ~${tof.distance_mm}mm`,
+            message: `Sensor ${tof.id} may be stuck at ~${(tof.distance_mm / 10).toFixed(1)}cm`,
             ts: new Date().toISOString(),
           })
         } else if (!isStuck && buf.stuckAlerted) {
