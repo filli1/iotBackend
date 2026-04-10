@@ -18,6 +18,7 @@ jobs:
             set -e
             cd /home/deploy/store-attention
             git pull origin main
+            rm -rf node_modules/.cache 2>/dev/null || true
             npm ci
             npm run build -w frontend
             cd backend
