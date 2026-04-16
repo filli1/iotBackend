@@ -104,6 +104,10 @@ export class DetectionEngine {
     }
   }
 
+  getUnitState(unitId: string): SessionState | null {
+    return this.units.get(unitId)?.state ?? null
+  }
+
   destroy(): void {
     for (const unit of this.units.values()) {
       if (unit.dwellTimer) clearTimeout(unit.dwellTimer)

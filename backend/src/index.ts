@@ -83,14 +83,15 @@ const start = async () => {
     registry,
     healthMonitor,
     onReading: (unitId, reading) => {
+      engine.process(unitId, reading)
       broadcaster.broadcast({
         type: 'sensor_reading',
         unitId,
         ts: new Date().toISOString(),
         tof: reading.tof,
         ...(reading.imu !== undefined && { imu: reading.imu }),
+        presenceState: engine.getUnitState(unitId) ?? 'idle',
       })
-      engine.process(unitId, reading)
     },
     onEvent: (unitId, event) => engine.processEvent(unitId, event),
   })
@@ -102,7 +103,7 @@ const start = async () => {
     registry.stop()
   })
 
-  await fastify.listen({ port: 7000, host: '0.0.0.0' })
+  await fastify.listen({ port: 7001, host: '0.0.0.0' })
 }
 
 start().catch((err: unknown) => {
