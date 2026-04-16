@@ -11,7 +11,8 @@ export function SessionTable({ sessions, sortBy, sortDir, onSort }: Props) {
   const arrow = (col: string) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ''
 
   return (
-    <table className="w-full text-sm">
+    <div className="overflow-x-auto">
+    <table className="w-full text-sm min-w-[480px]">
       <thead>
         <tr className="text-left text-gray-400 border-b border-gray-700">
           {[['unitName','Unit'],['startedAt','Started'],['dwellSeconds','Dwell'],['productInteracted','Interacted']].map(([col, label]) => (
@@ -38,5 +39,6 @@ export function SessionTable({ sessions, sortBy, sortDir, onSort }: Props) {
         ))}
       </tbody>
     </table>
+    </div>
   )
 }

@@ -23,10 +23,10 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Session History</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Session History</h1>
           <button onClick={handleExport} className="text-sm text-blue-400 hover:text-blue-300">
             Export CSV ↓
           </button>

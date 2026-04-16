@@ -44,10 +44,10 @@ export function SetupUnitsPage() {
   )
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Registered Units</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Registered Units</h1>
           <button
             onClick={() => setShowForm(true)}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
@@ -71,7 +71,8 @@ export function SetupUnitsPage() {
         ) : units.length === 0 ? (
           <p className="text-gray-400">No units registered yet.</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
             <thead>
               <tr className="text-left text-gray-400 border-b border-gray-700">
                 <th className="pb-2 pr-4">ID</th>
@@ -140,6 +141,7 @@ export function SetupUnitsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

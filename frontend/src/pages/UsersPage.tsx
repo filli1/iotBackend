@@ -52,10 +52,10 @@ export function UsersPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Users</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Users</h1>
           <button
             onClick={() => setShowForm(true)}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm"
@@ -107,7 +107,8 @@ export function UsersPage() {
         {loading ? (
           <p className="text-gray-400">Loading…</p>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="text-left text-gray-400 border-b border-gray-700">
                 <th className="pb-2 pr-4">Email</th>
@@ -139,6 +140,7 @@ export function UsersPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

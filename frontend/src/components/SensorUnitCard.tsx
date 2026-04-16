@@ -88,21 +88,21 @@ export function SensorUnitCard({ unitId, unitName, tofSensors, subscribed, onSub
       </div>
 
       {/* Business metrics */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gray-900 rounded p-3 text-center">
-          <div className="text-2xl font-bold text-white">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        <div className="bg-gray-900 rounded p-2 sm:p-3 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-white">
             {statsLoading ? '…' : stats?.totalSessions ?? 0}
           </div>
           <div className="text-xs text-gray-400 mt-1">Visitors today</div>
         </div>
-        <div className="bg-gray-900 rounded p-3 text-center">
-          <div className="text-2xl font-bold text-white">
+        <div className="bg-gray-900 rounded p-2 sm:p-3 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-white">
             {statsLoading ? '…' : stats ? formatDwell(stats.avgDwellSeconds) : '—'}
           </div>
           <div className="text-xs text-gray-400 mt-1">Avg. dwell</div>
         </div>
-        <div className="bg-gray-900 rounded p-3 text-center">
-          <div className="text-2xl font-bold text-white">
+        <div className="bg-gray-900 rounded p-2 sm:p-3 text-center">
+          <div className="text-lg sm:text-2xl font-bold text-white">
             {statsLoading ? '…' : stats ? `${Math.round(stats.interactionRate * 100)}%` : '—'}
           </div>
           <div className="text-xs text-gray-400 mt-1">Interaction rate</div>

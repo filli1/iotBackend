@@ -29,9 +29,9 @@ export function DashboardPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <AlertBanner />
       <ConnectionBanner />
-      <div className="p-6 flex-1 flex flex-col overflow-hidden">
-        <h1 className="text-2xl font-bold mb-4">Live Dashboard</h1>
-        <div className="flex-1 flex gap-4 overflow-hidden">
+      <div className="p-4 sm:p-6 flex-1 flex flex-col overflow-hidden">
+        <h1 className="text-xl sm:text-2xl font-bold mb-4">Live Dashboard</h1>
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
           <div className="flex-1 overflow-y-auto">
             {registeredUnits.length === 0 ? (
               <p className="text-gray-400">No units registered. <a href="/setup/units" className="text-blue-400 hover:underline">Register one →</a></p>
@@ -50,7 +50,7 @@ export function DashboardPage() {
               </div>
             )}
           </div>
-          <div className="w-72 flex-shrink-0">
+          <div className="w-full lg:w-72 flex-shrink-0 h-64 lg:h-auto">
             <EventFeed />
           </div>
         </div>

@@ -32,11 +32,11 @@ export function CalibrationPage() {
   const online = unitState?.status === 'online'
 
   return (
-    <div className="py-4 px-8">
+    <div className="py-4 px-4 sm:px-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link to={`/setup/units/${unitId}/configure`} className="text-gray-400 hover:text-white text-sm">← Configure</Link>
-          <h1 className="text-lg font-bold mt-1">Calibration — {unitId}</h1>
+          <h1 className="text-base sm:text-lg font-bold mt-1">Calibration — {unitId}</h1>
         </div>
         <span className={`flex items-center gap-1 text-sm ${online ? 'text-green-400' : 'text-gray-500'}`}>
           <span className={`w-2 h-2 rounded-full ${online ? 'bg-green-400' : 'bg-gray-500'}`} />

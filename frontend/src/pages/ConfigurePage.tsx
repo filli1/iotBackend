@@ -143,17 +143,18 @@ export function ConfigurePage() {
   )
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="max-w-2xl mx-auto space-y-8">
         <div className="flex items-center gap-4">
           <Link to="/setup/units" className="text-gray-400 hover:text-white text-sm">← Units</Link>
-          <h1 className="text-2xl font-bold">Configure {unitId}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Configure {unitId}</h1>
         </div>
 
         {/* ToF Sensors */}
         <section>
           <h2 className="text-lg font-semibold mb-3">ToF Sensors</h2>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[480px]">
             <thead>
               <tr className="text-gray-400 text-left">
                 <th className="pb-2">Index</th>
@@ -184,6 +185,7 @@ export function ConfigurePage() {
               ))}
             </tbody>
           </table>
+          </div>
           <div className="flex items-center gap-4 mt-2">
             <button
               type="button"
@@ -257,7 +259,8 @@ export function ConfigurePage() {
           {subscribers.length === 0 ? (
             <p className="text-gray-500 text-sm">No subscribers yet.</p>
           ) : (
-            <table className="w-full text-sm mb-4">
+            <div className="overflow-x-auto">
+            <table className="w-full text-sm mb-4 min-w-[360px]">
               <thead>
                 <tr className="text-gray-400 text-left">
                   <th className="pb-2">Email</th>
@@ -277,6 +280,7 @@ export function ConfigurePage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
           <div className="flex items-center gap-3">
             <select value={addUserId} onChange={e => setAddUserId(e.target.value)} className="flex-1 bg-gray-700 text-white rounded px-2 py-1 text-sm">
