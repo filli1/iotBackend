@@ -103,7 +103,8 @@ const start = async () => {
     registry.stop()
   })
 
-  await fastify.listen({ port: 0, host: '0.0.0.0' })
+  const port = Number(process.env.PORT) || 7000
+  await fastify.listen({ port, host: '0.0.0.0' })
 }
 
 start().catch((err: unknown) => {
