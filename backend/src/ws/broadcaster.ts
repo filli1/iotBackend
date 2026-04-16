@@ -21,7 +21,25 @@ export class WsBroadcaster {
 }
 
 export async function registerWs(fastify: FastifyInstance): Promise<WsBroadcaster> {
-  await fastify.register(websocket)
+  await fastify.register(websocket, {
+    options: {
+      clientTracking: true,
+      perMessageDeflate: false,
+    },
+  })
+
+  // Ping all connected clients every 30s to keep connections alive
+  const pingInterval = setInterval(() => {
+    for (const client of fastify.websocketServer.clients) {
+      if (client.readyState === 1) {
+        client.ping()
+      }
+    }
+  }, 30_000)
+
+  fastify.addHook('onClose', () => {
+    clearInterval(pingInterval)
+  })
 
   fastify.get('/ws', { websocket: true }, () => {
     // clients are tracked automatically by @fastify/websocket
