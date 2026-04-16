@@ -18,8 +18,8 @@ jobs:
             set -e
             cd /home/deploy/store-attention
             git pull origin main
-            rm -rf node_modules/.cache 2>/dev/null || true
-            npm ci
+            rm -rf node_modules backend/node_modules frontend/node_modules
+            npm install
             npm run build -w frontend
             cd backend
             npx prisma migrate deploy
