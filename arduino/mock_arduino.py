@@ -24,7 +24,7 @@ UNIT_KEYS = {
     # "product-02": "<api-key>",
 }
 
-BACKEND_URL = "http://localhost:7000/api/sensors/data"
+BACKEND_URL = "http://localhost:7001/api/sensors/data"
 LOOP_INTERVAL_S = 0.5   # matches real Arduino 500 ms cadence
 
 # How many ToF sensors must be in-range to trigger presence detection.

@@ -1,11 +1,11 @@
 vi.mock('./twilioNotifier', () => ({
-  sendWhatsApp: vi.fn().mockResolvedValue(undefined),
+  sendSms: vi.fn().mockResolvedValue(undefined),
 }))
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SessionManager } from './sessionManager'
 import type { WsBroadcaster } from '../ws/broadcaster'
-import { sendWhatsApp } from './twilioNotifier'
+import { sendSms } from './twilioNotifier'
 
 const mockPrisma = {
   presenceSession: {
@@ -88,20 +88,20 @@ describe('SessionManager', () => {
     expect(alertCalls).toHaveLength(0)
   })
 
-  it('sends WhatsApp to subscribed users when alert fires', async () => {
+  it('sends SMS to subscribed users when alert fires', async () => {
     mockPrisma.unitSubscription.findMany.mockResolvedValueOnce([
       { user: { phoneNumber: '+4553575520' } },
     ])
     await manager.handleDetectionEvent({ type: 'session_started', unitId: 'unit-01', ts: new Date() })
     await manager.handleDetectionEvent({ type: 'session_ended', unitId: 'unit-01', ts: new Date(), dwellSeconds: 45 })
     await new Promise(r => setTimeout(r, 10))
-    expect(sendWhatsApp).toHaveBeenCalledWith('+4553575520', expect.stringContaining('Stand A'))
+    expect(sendSms).toHaveBeenCalledWith('+4553575520', expect.stringContaining('Stand A'))
   })
 
-  it('does NOT call sendWhatsApp when there are no subscribers', async () => {
+  it('does NOT call sendSms when there are no subscribers', async () => {
     await manager.handleDetectionEvent({ type: 'session_started', unitId: 'unit-01', ts: new Date() })
     await manager.handleDetectionEvent({ type: 'session_ended', unitId: 'unit-01', ts: new Date(), dwellSeconds: 45 })
     await new Promise(r => setTimeout(r, 10))
-    expect(sendWhatsApp).not.toHaveBeenCalled()
+    expect(sendSms).not.toHaveBeenCalled()
   })
 })

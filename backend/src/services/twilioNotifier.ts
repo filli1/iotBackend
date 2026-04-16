@@ -1,6 +1,6 @@
 import twilio from 'twilio'
 
-export async function sendWhatsApp(to: string, body: string): Promise<void> {
+export async function sendSms(to: string, body: string): Promise<void> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
   const apiKeySid = process.env.TWILIO_API_KEY_SID
@@ -22,7 +22,7 @@ export async function sendWhatsApp(to: string, body: string): Promise<void> {
 
   await client.messages.create({
     from: fromNumber,
-    to: `whatsapp:${to}`,
+    to,
     body,
   })
 }

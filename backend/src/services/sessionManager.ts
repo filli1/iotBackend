@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type { WsBroadcaster } from '../ws/broadcaster'
 import type { DetectionEvent } from '../types/sensor'
-import { sendWhatsApp } from './twilioNotifier'
+import { sendSms } from './twilioNotifier'
 
 type ActiveSession = {
   sessionId: string
@@ -152,17 +152,26 @@ export class SessionManager {
         }),
       ])
 
+      console.log(`[Alert SMS] unitId=${unitId}, unit found: ${!!unit}, subscriptions: ${subscriptions.length}`)
+
       const phones = subscriptions
         .map(s => s.user.phoneNumber)
         .filter((p): p is string => p !== null)
 
+      console.log(`[Alert SMS] phone numbers with values: ${phones.length}`, phones)
+
       if (unit && phones.length > 0) {
         const body = `Alert: Customer at ${unit.name} — ${dwellSeconds}s dwell${session.productInteracted ? ', product interacted with' : ''}`
         phones.forEach(phone => {
-          sendWhatsApp(phone, body).catch(err => {
-            console.error('WhatsApp notification failed:', err)
-          })
+          console.log(`[Alert SMS] Sending to ${phone}: ${body}`)
+          sendSms(phone, body)
+            .then(() => console.log(`[Alert SMS] Sent successfully to ${phone}`))
+            .catch(err => {
+              console.error(`[Alert SMS] FAILED to ${phone}:`, err)
+            })
         })
+      } else {
+        console.log(`[Alert SMS] Skipped — unit: ${!!unit}, phones: ${phones.length}`)
       }
     }
   }

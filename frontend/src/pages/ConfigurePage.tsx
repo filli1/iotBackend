@@ -241,7 +241,7 @@ export function ConfigurePage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">Alert Rule</h2>
           <div className="space-y-3">
-            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Alert enabled<Tooltip text="When enabled, a WhatsApp alert is sent to all subscribers when the rule conditions are met." /></span>{toggle(draft.alertRule.enabled, v => setAlert('enabled', v))}</div>
+            <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Alert enabled<Tooltip text="When enabled, an SMS alert is sent to all subscribers when the rule conditions are met." /></span>{toggle(draft.alertRule.enabled, v => setAlert('enabled', v))}</div>
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Dwell threshold (s)<Tooltip text="Customer must be present for at least this many seconds before an alert is sent." /></span>{numInput(draft.alertRule.dwellThresholdSeconds, v => setAlert('dwellThresholdSeconds', v), 1, 300)}</div>
             <div className="flex items-center justify-between"><span className="text-gray-300 text-sm flex items-center">Require interaction<Tooltip text="If enabled, the alert only fires if the customer also interacted with the product." /></span>{toggle(draft.alertRule.requireInteraction, v => setAlert('requireInteraction', v))}</div>
           </div>
@@ -251,14 +251,9 @@ export function ConfigurePage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">Notifications</h2>
           <p className="text-gray-400 text-sm mb-3">
-            Users subscribed here receive a WhatsApp alert when this unit's alert rule fires.
+            Users subscribed here receive an SMS alert when this unit's alert rule fires.
             A valid phone number must be set on the user account.
           </p>
-          <div className="bg-yellow-900/40 border border-yellow-700/60 rounded p-3 mb-4 text-sm text-yellow-200">
-            <strong>WhatsApp opt-in required:</strong> Before a user can receive alerts, they must send the message{' '}
-            <code className="bg-yellow-900 px-1 rounded font-mono">join fast-stone</code> to{' '}
-            <strong>+1 415 523 8886</strong> on WhatsApp.
-          </div>
           {subscribers.length === 0 ? (
             <p className="text-gray-500 text-sm">No subscribers yet.</p>
           ) : (
