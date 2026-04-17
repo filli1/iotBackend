@@ -224,18 +224,6 @@ export function ConfigurePage() {
               <span className="text-gray-300 text-sm flex items-center">IMU enabled<Tooltip text="Enable vibration-based product interaction detection. Disable if no IMU is installed." /></span>
               {toggle(draft.configuration.imuEnabled, v => setConfig('imuEnabled', v))}
             </div>
-            {draft.configuration.imuEnabled && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm flex items-center">Vibration threshold (g RMS)<Tooltip text="Minimum vibration intensity (g RMS) the IMU must measure to register a product interaction event." /></span>
-                  {numInput(draft.configuration.imuVibrationThreshold, v => setConfig('imuVibrationThreshold', v), 0, 5)}
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm flex items-center">Duration threshold (ms)<Tooltip text="How long the vibration must be sustained to count as a product interaction event." /></span>
-                  {numInput(draft.configuration.imuDurationThresholdMs, v => setConfig('imuDurationThresholdMs', v), 100, 2000)}
-                </div>
-              </>
-            )}
           </div>
         </section>
 
