@@ -4,10 +4,12 @@ type UnitStatus = {
 }
 
 type OfflineCallback = (unitId: string) => void
+type OnlineCallback = (unitId: string) => void
 
 export class UnitRegistry {
   private units = new Map<string, UnitStatus>()
   private offlineCallbacks: OfflineCallback[] = []
+  private onlineCallbacks: OnlineCallback[] = []
   private timer: ReturnType<typeof setInterval>
 
   constructor(checkIntervalMs = 30_000, offlineAfterMs = 60_000) {
@@ -31,8 +33,12 @@ export class UnitRegistry {
   markSeen(unitId: string): void {
     const status = this.units.get(unitId)
     if (status) {
+      const wasOnline = status.online
       status.lastSeen = new Date()
       status.online = true
+      if (!wasOnline) {
+        this.onlineCallbacks.forEach(cb => cb(unitId))
+      }
     }
   }
 
@@ -46,6 +52,10 @@ export class UnitRegistry {
 
   onOffline(cb: OfflineCallback): void {
     this.offlineCallbacks.push(cb)
+  }
+
+  onOnline(cb: OnlineCallback): void {
+    this.onlineCallbacks.push(cb)
   }
 
   stop(): void {

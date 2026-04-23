@@ -75,6 +75,16 @@ const start = async () => {
     broadcaster.broadcast({ type: 'unit_status', unitId, status: 'offline', lastSeen: new Date().toISOString() })
   })
 
+  registry.onOnline(unitId => {
+    const status = registry.getStatus(unitId)
+    broadcaster.broadcast({
+      type: 'unit_status',
+      unitId,
+      status: 'online',
+      lastSeen: (status?.lastSeen ?? new Date()).toISOString(),
+    })
+  })
+
   await fastify.register(sessionRoutes)
   await fastify.register(analyticsRoutes)
   await fastify.register(unitRoutes, { registry, engine })
