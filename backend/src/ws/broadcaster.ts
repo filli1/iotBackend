@@ -45,8 +45,10 @@ export async function registerWs(
     clearInterval(pingInterval)
   })
 
-  fastify.get('/ws', { websocket: true }, (socket) => {
+  fastify.get('/ws', { websocket: true }, (connection) => {
     if (onConnect) {
+      const socket = (connection as { socket?: { readyState: number; send: (data: string) => void } }).socket
+        ?? (connection as unknown as { readyState: number; send: (data: string) => void })
       onConnect((message) => {
         if (socket.readyState === 1) {
           socket.send(JSON.stringify(message))
