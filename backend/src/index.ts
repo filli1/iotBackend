@@ -49,7 +49,16 @@ const start = async () => {
 
   await fastify.register(authRoutes)
 
-  const broadcaster = await registerWs(fastify)
+  const broadcaster = await registerWs(fastify, (send) => {
+    for (const { unitId, online, lastSeen } of registry.getAllStatuses()) {
+      send({
+        type: 'unit_status',
+        unitId,
+        status: online ? 'online' : 'offline',
+        lastSeen: lastSeen.toISOString(),
+      })
+    }
+  })
   const healthMonitor = new HealthMonitor(broadcaster)
 
   const sessionManager = new SessionManager(prisma, broadcaster)

@@ -50,6 +50,10 @@ export class UnitRegistry {
     return this.units.get(unitId) ?? null
   }
 
+  getAllStatuses(): Array<{ unitId: string } & UnitStatus> {
+    return Array.from(this.units, ([unitId, status]) => ({ unitId, ...status }))
+  }
+
   onOffline(cb: OfflineCallback): void {
     this.offlineCallbacks.push(cb)
   }

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import websocket from '@fastify/websocket'
 
 export type WsMessage = Record<string, unknown>
+export type OnConnectHandler = (send: (message: WsMessage) => void) => void
 
 export class WsBroadcaster {
   private fastify: FastifyInstance
@@ -20,7 +21,10 @@ export class WsBroadcaster {
   }
 }
 
-export async function registerWs(fastify: FastifyInstance): Promise<WsBroadcaster> {
+export async function registerWs(
+  fastify: FastifyInstance,
+  onConnect?: OnConnectHandler
+): Promise<WsBroadcaster> {
   await fastify.register(websocket, {
     options: {
       clientTracking: true,
@@ -41,8 +45,14 @@ export async function registerWs(fastify: FastifyInstance): Promise<WsBroadcaste
     clearInterval(pingInterval)
   })
 
-  fastify.get('/ws', { websocket: true }, () => {
-    // clients are tracked automatically by @fastify/websocket
+  fastify.get('/ws', { websocket: true }, (socket) => {
+    if (onConnect) {
+      onConnect((message) => {
+        if (socket.readyState === 1) {
+          socket.send(JSON.stringify(message))
+        }
+      })
+    }
   })
 
   return new WsBroadcaster(fastify)
