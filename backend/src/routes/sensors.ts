@@ -72,7 +72,9 @@ export const sensorRoutes: FastifyPluginAsync<PluginOptions> = async (fastify, o
         return reply.status(404).send({ error: 'Unknown unit_id' })
       }
 
+      const wasOnline = opts.registry.getStatus(unit_id)?.online ?? false
       opts.registry.markSeen(unit_id)
+      request.log.info({ unit_id, wasOnline }, 'ping received')
       return reply.status(204).send()
     }
   )
